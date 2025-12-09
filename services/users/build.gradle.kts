@@ -33,14 +33,14 @@ application {
 
 sourceSets {
     main {
-        kotlin.srcDirs(".")
+        kotlin.srcDirs(
+            "adapters",
+            "application",
+            "domain",
+            "infrastructure"
+        )
     }
     test {
         kotlin.srcDirs("../../tests/services/users")
     }
-}
-
-// Excluir arquivos de configuração do source set
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    exclude("build.gradle.kts", "Dockerfile")
 }

@@ -5,7 +5,9 @@ import users.application.dto.UserResponse
 import users.application.useCases.GetUserByEmailUseCase
 import users.application.useCases.GetAllUsersUseCase
 import users.application.useCases.UserUseCase
+import users.domain.Role
 import users.domain.User
+import java.time.Instant
 
 class UserGraphQLSchema(
     private val registerUserUseCase: UserUseCase,
@@ -13,6 +15,18 @@ class UserGraphQLSchema(
     private val getAllUsersUseCase: GetAllUsersUseCase
 ) {
     fun configureSchema(schema: SchemaBuilder) {
+        // Registrar scalar Instant
+        schema.stringScalar<Instant> {
+            description = "ISO-8601 timestamp"
+            serialize = { instant -> instant.toString() }
+            deserialize = { str -> Instant.parse(str) }
+        }
+
+        // Registrar enum Role
+        schema.enum<Role> {
+            description = "Roles disponíveis para usuários"
+        }
+
         schema.type<User> {
             description = "Representa um usuário do sistema"
         }

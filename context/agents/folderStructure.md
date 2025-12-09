@@ -14,8 +14,11 @@ projeto/
   ├── services/                  # Microserviços (cada feature é um serviço)
   │   └── <feature-name>/
   ├── shared/                    # Código compartilhado entre serviços
+  ├── context/
+    ├── adrs/                     # Architecture Decision Records
+    ├── agents/                   # Documentação para agentes IA
+    └── intent/                   # Documentos de intenção (visão geral de sistemas)
   ├── tests/                     # Testes (espelha estrutura de services/)
-  ├── context/                   # Documentação e ADRs
   └── docker-compose.yml         # Orquestração dos serviços
 ```
 

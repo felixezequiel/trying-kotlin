@@ -14,9 +14,13 @@ import kotlinx.serialization.json.Json
 import users.adapters.inbound.UserController
 import users.adapters.inbound.UserGraphQLSchema
 import users.adapters.outbound.UnitOfWorkAdapter
+import users.adapters.outbound.UserRepositoryAdapter
 import users.application.dto.ErrorResponse
-import users.application.useCases.GetUserByEmailUseCase
+import users.application.useCases.AddRoleToUserUseCase
 import users.application.useCases.GetAllUsersUseCase
+import users.application.useCases.GetUserByEmailUseCase
+import users.application.useCases.GetUserByIdUseCase
+import users.application.useCases.RemoveRoleFromUserUseCase
 import users.application.useCases.UserUseCase
 import users.infrastructure.persistence.DatabaseContext
 
@@ -41,10 +45,25 @@ fun Application.configureRouting() {
     // Inicialização das dependências
     val dbContext = DatabaseContext()
     val unitOfWork = UnitOfWorkAdapter(dbContext)
+    val userRepository = UserRepositoryAdapter(dbContext)
+    
+    // Use Cases
     val registerUserUseCase = UserUseCase(unitOfWork)
     val getUserByEmailUseCase = GetUserByEmailUseCase(unitOfWork)
     val getAllUsersUseCase = GetAllUsersUseCase(unitOfWork)
-    val userController = UserController(registerUserUseCase, getUserByEmailUseCase, getAllUsersUseCase)
+    val getUserByIdUseCase = GetUserByIdUseCase(userRepository)
+    val addRoleToUserUseCase = AddRoleToUserUseCase(userRepository)
+    val removeRoleFromUserUseCase = RemoveRoleFromUserUseCase(userRepository)
+    
+    // Controllers
+    val userController = UserController(
+        registerUserUseCase,
+        getUserByEmailUseCase,
+        getAllUsersUseCase,
+        getUserByIdUseCase,
+        addRoleToUserUseCase,
+        removeRoleFromUserUseCase
+    )
     val userGraphQLSchema = UserGraphQLSchema(registerUserUseCase, getUserByEmailUseCase, getAllUsersUseCase)
 
     // Configuração do GraphQL
@@ -71,6 +90,21 @@ fun Application.configureRouting() {
             }
             get("/all") {
                 userController.getAllUsers(call)
+            }
+            
+            // Rotas com ID
+            route("/{id}") {
+                get {
+                    userController.getUserById(call)
+                }
+                
+                // Rotas de roles
+                post("/roles") {
+                    userController.addRoleToUser(call)
+                }
+                delete("/roles/{role}") {
+                    userController.removeRoleFromUser(call)
+                }
             }
         }
     }
