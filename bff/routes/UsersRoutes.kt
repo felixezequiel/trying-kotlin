@@ -5,7 +5,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.http.*
-import bff.clients.UsersClient
+import bff.clients.IUsersClient
 import bff.clients.RegisterUserRequest
 import shared.exceptions.NotFoundException
 
@@ -13,7 +13,7 @@ import shared.exceptions.NotFoundException
  * Rotas REST para o domínio de Users
  * Encaminha requisições para o serviço Users
  */
-fun Route.usersRoutes(usersClient: UsersClient) {
+fun Route.usersRoutes(usersClient: IUsersClient) {
     route("/api/users") {
         
         // POST /api/users - Registrar novo usuário

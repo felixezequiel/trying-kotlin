@@ -21,7 +21,7 @@ class ServiceClients {
         }
     }
     
-    val users = UsersClient(
+    val users: IUsersClient = UsersClient(
         httpClient = httpClient,
         baseUrl = EnvConfig.get("USERS_SERVICE_URL", "http://localhost:8081")
     )

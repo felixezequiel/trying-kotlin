@@ -9,14 +9,23 @@ import shared.dto.ServiceResponse
 import shared.exceptions.ServiceException
 
 /**
+ * Interface para o cliente de Users - permite mocking em testes
+ */
+interface IUsersClient {
+    suspend fun registerUser(request: RegisterUserRequest): UserResponse
+    suspend fun getUserByEmail(email: String): UserResponse?
+    suspend fun getAllUsers(): List<UserResponse>
+}
+
+/**
  * Cliente HTTP para o serviço de Users
  */
 class UsersClient(
     private val httpClient: HttpClient,
     private val baseUrl: String
-) {
+) : IUsersClient {
     
-    suspend fun registerUser(request: RegisterUserRequest): UserResponse {
+    override suspend fun registerUser(request: RegisterUserRequest): UserResponse {
         val response = httpClient.post("$baseUrl/users") {
             contentType(ContentType.Application.Json)
             setBody(request)
@@ -29,7 +38,7 @@ class UsersClient(
         return response.body()
     }
     
-    suspend fun getUserByEmail(email: String): UserResponse? {
+    override suspend fun getUserByEmail(email: String): UserResponse? {
         val response = httpClient.get("$baseUrl/users") {
             parameter("email", email)
         }
@@ -45,7 +54,7 @@ class UsersClient(
         return response.body()
     }
     
-    suspend fun getAllUsers(): List<UserResponse> {
+    override suspend fun getAllUsers(): List<UserResponse> {
         val response = httpClient.get("$baseUrl/users/all")
         
         if (!response.status.isSuccess()) {

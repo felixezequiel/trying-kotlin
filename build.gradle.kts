@@ -1,15 +1,21 @@
 plugins {
     kotlin("jvm") version "1.9.24" apply false
     kotlin("plugin.serialization") version "1.9.24" apply false
+    jacoco
 }
 
 group = "com.myapp"
 version = "1.0-SNAPSHOT"
 
+repositories {
+    mavenCentral()
+}
+
 // Configurações compartilhadas para todos os subprojetos
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
+    apply(plugin = "jacoco")
 
     group = "com.myapp"
     version = "1.0-SNAPSHOT"
@@ -43,10 +49,50 @@ subprojects {
             events("passed", "skipped", "failed")
             showStandardStreams = true
         }
+        finalizedBy(tasks.named("jacocoTestReport"))
+    }
+
+    tasks.withType<JacocoReport> {
+        dependsOn(tasks.withType<Test>())
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
     }
 
     configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
         jvmToolchain(17)
+    }
+}
+
+// Task para gerar relatório de coverage consolidado
+tasks.register<JacocoReport>("jacocoFullReport") {
+    group = "verification"
+    description = "Gera relatório de coverage consolidado de todos os módulos"
+    
+    // Depende dos testes e relatórios de todos os subprojetos
+    dependsOn(subprojects.map { it.tasks.named("test") })
+    dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
+    
+    // Coleta sources e classes de todos os subprojetos
+    additionalSourceDirs.setFrom(subprojects.flatMap { 
+        it.the<SourceSetContainer>()["main"].allSource.srcDirs 
+    })
+    sourceDirectories.setFrom(subprojects.flatMap { 
+        it.the<SourceSetContainer>()["main"].allSource.srcDirs 
+    })
+    classDirectories.setFrom(subprojects.map { 
+        it.the<SourceSetContainer>()["main"].output 
+    })
+    executionData.setFrom(subprojects.map { 
+        it.layout.buildDirectory.file("jacoco/test.exec") 
+    })
+    
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/full/jacocoFullReport.xml"))
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/full/html"))
     }
 }
 

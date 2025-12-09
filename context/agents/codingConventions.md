@@ -35,6 +35,50 @@ class UserUseCase(private val unitOfWork: IUnitOfWork) {
 }
 ```
 
+## DTOs e Bounded Contexts
+
+> **ADR Relacionada**: [ADR-002: Isolamento de DTOs por Bounded Context](../adrs/002-dto-isolation-per-bounded-context.md)
+
+### Regra: DTOs devem ser isolados por Bounded Context
+
+Cada módulo (BFF, serviços) deve ter seus **próprios DTOs**, mesmo que pareçam similares.
+
+| Local | Conteúdo | Exemplo |
+|-------|----------|---------|
+| `services/{service}/application/dto/` | DTOs do serviço | `UserResponse`, `RegisterUserRequest` |
+| `bff/clients/` | DTOs do BFF (ACL) | `UserResponse`, `RegisterUserRequest` |
+| `shared/dto/` | **Apenas** infra genérica | `PaginatedResponse<T>`, `ServiceResponse<T>` |
+
+### ❌ NÃO fazer
+
+```kotlin
+// shared/dto/UserResponse.kt - ERRADO!
+// DTOs de domínio específico não devem estar em shared
+data class UserResponse(val id: String, val name: String)
+```
+
+### ✅ Fazer
+
+```kotlin
+// bff/clients/UsersClient.kt - CORRETO
+// Cada contexto tem seu próprio DTO
+@Serializable
+data class UserResponse(val id: String, val name: String, val email: String)
+
+// services/users/application/dto/UserResponse.kt - CORRETO
+// Pode ter estrutura diferente conforme necessidade do contexto
+@Serializable
+data class UserResponse(val id: Long, val name: String, val email: String)
+```
+
+### Justificativa
+
+- **Anti-Corruption Layer**: Protege cada contexto de mudanças externas
+- **Evolução independente**: Serviços podem evoluir sem afetar outros
+- **DDD**: Respeita o isolamento de Bounded Contexts
+
+---
+
 ## Anti-Patterns a Evitar
 
 1. **Dependências circulares**: Domain nunca deve importar de Application ou Infrastructure
@@ -43,6 +87,7 @@ class UserUseCase(private val unitOfWork: IUnitOfWork) {
 4. **Hard-coded values**: Use configuração ou constantes
 5. **Funções muito longas**: Prefira funções pequenas e focadas
 6. **Ignorar erros**: Sempre trate exceções adequadamente
+7. **DTOs de domínio em shared**: Cada Bounded Context deve ter seus próprios DTOs (ver ADR-002)
 
 ## Boas Práticas
 
