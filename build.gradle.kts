@@ -187,21 +187,3 @@ tasks.register<Exec>("dev-docker-stop") {
 
     commandLine("docker", "compose", "down")
 }
-}
-
-// Task para Docker Compose (se Docker estiver disponível)
-tasks.register<Exec>("dev-docker") {
-    group = "application"
-    description = "Inicia todos os serviços via Docker Compose"
-    
-    commandLine("docker", "compose", "up", "--build")
-}
-
-// Task para parar Docker Compose
-tasks.register<Exec>("dev-docker-stop") {
-    group = "application"
-    description = "Para todos os serviços do Docker Compose"
-    
-    commandLine("docker", "compose", "down")
-}
-
