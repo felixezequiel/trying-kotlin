@@ -1,7 +1,8 @@
 package events.infrastructure.web
 
 import events.adapters.inbound.EventController
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.dto.ErrorResponse
 import events.application.useCases.CancelEventUseCase
 import events.application.useCases.CreateEventUseCase
@@ -10,7 +11,6 @@ import events.application.useCases.GetEventUseCase
 import events.application.useCases.ListEventsUseCase
 import events.application.useCases.PublishEventUseCase
 import events.application.useCases.UpdateEventUseCase
-import events.infrastructure.persistence.DatabaseContext
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -46,18 +46,19 @@ fun Application.configureRouting() {
         }
     }
 
-    // Inicialização das dependências
-    val dbContext = DatabaseContext()
-    val eventRepository = EventRepositoryAdapter(dbContext)
+    // Inicialização das dependências (Composição Root)
+    // Para trocar para PostgreSQL, basta criar PostgresEventStore e usar aqui
+    val eventStore = InMemoryEventStore()
+    val unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
 
     // Use Cases
-    val createEventUseCase = CreateEventUseCase(eventRepository)
-    val updateEventUseCase = UpdateEventUseCase(eventRepository)
-    val publishEventUseCase = PublishEventUseCase(eventRepository)
-    val cancelEventUseCase = CancelEventUseCase(eventRepository)
-    val finishEventUseCase = FinishEventUseCase(eventRepository)
-    val getEventUseCase = GetEventUseCase(eventRepository)
-    val listEventsUseCase = ListEventsUseCase(eventRepository)
+    val createEventUseCase = CreateEventUseCase(unitOfWork)
+    val updateEventUseCase = UpdateEventUseCase(unitOfWork)
+    val publishEventUseCase = PublishEventUseCase(unitOfWork)
+    val cancelEventUseCase = CancelEventUseCase(unitOfWork)
+    val finishEventUseCase = FinishEventUseCase(unitOfWork)
+    val getEventUseCase = GetEventUseCase(unitOfWork)
+    val listEventsUseCase = ListEventsUseCase(unitOfWork)
 
     // Controller
     val eventController =

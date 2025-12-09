@@ -1,8 +1,8 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.useCases.CancelEventUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -12,15 +12,15 @@ import services.events.TestHelpers
 
 class CancelEventUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var cancelEventUseCase: CancelEventUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
-        cancelEventUseCase = CancelEventUseCase(eventRepository)
+        eventStore = InMemoryEventStore()
+        unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+        cancelEventUseCase = CancelEventUseCase(unitOfWork)
     }
 
     private fun createTestEvent(
@@ -35,7 +35,7 @@ class CancelEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.DRAFT)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val cancelledEvent = cancelEventUseCase.execute(eventId, partnerId)
@@ -49,7 +49,7 @@ class CancelEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val cancelledEvent = cancelEventUseCase.execute(eventId, partnerId)
@@ -63,7 +63,7 @@ class CancelEventUseCaseTest {
         // Arrange
         val ownerPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId, status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val cancelledEvent = cancelEventUseCase.execute(eventId, partnerId = null, isAdmin = true)
@@ -77,7 +77,7 @@ class CancelEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.CANCELLED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act & Assert
         val exception =
@@ -94,7 +94,7 @@ class CancelEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.FINISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act & Assert
         val exception =
@@ -112,7 +112,7 @@ class CancelEventUseCaseTest {
         val ownerPartnerId = UUID.randomUUID()
         val otherPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act & Assert
         val exception =

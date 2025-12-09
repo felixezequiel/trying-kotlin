@@ -1,8 +1,8 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.useCases.ListEventsUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -12,15 +12,15 @@ import services.events.TestHelpers
 
 class ListEventsUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var listEventsUseCase: ListEventsUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
-        listEventsUseCase = ListEventsUseCase(eventRepository)
+        eventStore = InMemoryEventStore()
+        unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+        listEventsUseCase = ListEventsUseCase(unitOfWork)
     }
 
     private fun createTestEvent(
@@ -34,10 +34,16 @@ class ListEventsUseCaseTest {
     @Test
     fun `executePublic deve retornar apenas eventos PUBLISHED`() = runTest {
         // Arrange
-        eventRepository.add(createTestEvent(status = EventStatus.DRAFT, name = "Draft"))
-        eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED, name = "Published 1"))
-        eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED, name = "Published 2"))
-        eventRepository.add(createTestEvent(status = EventStatus.CANCELLED, name = "Cancelled"))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.DRAFT, name = "Draft"))
+        unitOfWork.eventRepository.add(
+                createTestEvent(status = EventStatus.PUBLISHED, name = "Published 1")
+        )
+        unitOfWork.eventRepository.add(
+                createTestEvent(status = EventStatus.PUBLISHED, name = "Published 2")
+        )
+        unitOfWork.eventRepository.add(
+                createTestEvent(status = EventStatus.CANCELLED, name = "Cancelled")
+        )
 
         // Act
         val events = listEventsUseCase.executePublic()
@@ -53,9 +59,15 @@ class ListEventsUseCaseTest {
         val partnerId1 = UUID.randomUUID()
         val partnerId2 = UUID.randomUUID()
 
-        eventRepository.add(createTestEvent(partnerId = partnerId1, name = "Partner1 Event1"))
-        eventRepository.add(createTestEvent(partnerId = partnerId1, name = "Partner1 Event2"))
-        eventRepository.add(createTestEvent(partnerId = partnerId2, name = "Partner2 Event1"))
+        unitOfWork.eventRepository.add(
+                createTestEvent(partnerId = partnerId1, name = "Partner1 Event1")
+        )
+        unitOfWork.eventRepository.add(
+                createTestEvent(partnerId = partnerId1, name = "Partner1 Event2")
+        )
+        unitOfWork.eventRepository.add(
+                createTestEvent(partnerId = partnerId2, name = "Partner2 Event1")
+        )
 
         // Act
         val events = listEventsUseCase.executeByPartner(partnerId1)
@@ -68,9 +80,9 @@ class ListEventsUseCaseTest {
     @Test
     fun `executeByStatus deve retornar eventos com status específico`() = runTest {
         // Arrange
-        eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
-        eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
-        eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED))
 
         // Act
         val draftEvents = listEventsUseCase.executeByStatus(EventStatus.DRAFT)
@@ -83,9 +95,9 @@ class ListEventsUseCaseTest {
     @Test
     fun `executeAll deve retornar todos os eventos`() = runTest {
         // Arrange
-        eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
-        eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED))
-        eventRepository.add(createTestEvent(status = EventStatus.CANCELLED))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.DRAFT))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.PUBLISHED))
+        unitOfWork.eventRepository.add(createTestEvent(status = EventStatus.CANCELLED))
 
         // Act
         val allEvents = listEventsUseCase.executeAll()

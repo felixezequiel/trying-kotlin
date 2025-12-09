@@ -1,10 +1,10 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.dto.UpdateEventRequest
 import events.application.dto.VenueRequest
 import events.application.useCases.UpdateEventUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -14,15 +14,15 @@ import services.events.TestHelpers
 
 class UpdateEventUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var updateEventUseCase: UpdateEventUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
-        updateEventUseCase = UpdateEventUseCase(eventRepository)
+        eventStore = InMemoryEventStore()
+        unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+        updateEventUseCase = UpdateEventUseCase(unitOfWork)
     }
 
     private fun createTestEvent(
@@ -43,7 +43,7 @@ class UpdateEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         val request = UpdateEventRequest(name = "Novo Nome do Evento")
 
@@ -60,7 +60,7 @@ class UpdateEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         val request =
                 UpdateEventRequest(
@@ -107,7 +107,7 @@ class UpdateEventUseCaseTest {
         val ownerPartnerId = UUID.randomUUID()
         val otherPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         val request = UpdateEventRequest(name = "Novo Nome")
 
@@ -126,7 +126,7 @@ class UpdateEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.CANCELLED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         val request = UpdateEventRequest(name = "Novo Nome")
 
@@ -145,7 +145,7 @@ class UpdateEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.FINISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         val request = UpdateEventRequest(name = "Novo Nome")
 

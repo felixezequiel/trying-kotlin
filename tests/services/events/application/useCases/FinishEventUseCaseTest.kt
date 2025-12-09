@@ -1,8 +1,8 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.useCases.FinishEventUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -12,15 +12,15 @@ import services.events.TestHelpers
 
 class FinishEventUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var finishEventUseCase: FinishEventUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
-        finishEventUseCase = FinishEventUseCase(eventRepository)
+        eventStore = InMemoryEventStore()
+        unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+        finishEventUseCase = FinishEventUseCase(unitOfWork)
     }
 
     private fun createTestEvent(
@@ -35,7 +35,7 @@ class FinishEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val finishedEvent = finishEventUseCase.execute(eventId, partnerId)
@@ -49,7 +49,7 @@ class FinishEventUseCaseTest {
         // Arrange
         val ownerPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId, status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val finishedEvent = finishEventUseCase.execute(eventId, partnerId = null, isAdmin = true)
@@ -63,7 +63,7 @@ class FinishEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.DRAFT)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act & Assert
         val exception =
@@ -81,7 +81,7 @@ class FinishEventUseCaseTest {
         val ownerPartnerId = UUID.randomUUID()
         val otherPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId, status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act & Assert
         val exception =

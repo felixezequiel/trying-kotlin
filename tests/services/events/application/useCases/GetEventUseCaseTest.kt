@@ -1,8 +1,8 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.useCases.GetEventUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -12,15 +12,15 @@ import services.events.TestHelpers
 
 class GetEventUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var getEventUseCase: GetEventUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
-        getEventUseCase = GetEventUseCase(eventRepository)
+        eventStore = InMemoryEventStore()
+        unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+        getEventUseCase = GetEventUseCase(unitOfWork)
     }
 
     private fun createTestEvent(
@@ -34,7 +34,7 @@ class GetEventUseCaseTest {
     fun `deve buscar evento por ID`() = runTest {
         // Arrange
         val event = createTestEvent()
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val foundEvent = getEventUseCase.execute(eventId)
@@ -60,7 +60,7 @@ class GetEventUseCaseTest {
     fun `executePublic deve retornar evento PUBLISHED`() = runTest {
         // Arrange
         val event = createTestEvent(status = EventStatus.PUBLISHED)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val foundEvent = getEventUseCase.executePublic(eventId)
@@ -74,7 +74,7 @@ class GetEventUseCaseTest {
     fun `executePublic deve retornar null para evento DRAFT`() = runTest {
         // Arrange
         val event = createTestEvent(status = EventStatus.DRAFT)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val foundEvent = getEventUseCase.executePublic(eventId)
@@ -88,7 +88,7 @@ class GetEventUseCaseTest {
         // Arrange
         val partnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = partnerId, status = EventStatus.DRAFT)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val foundEvent = getEventUseCase.executeForPartner(eventId, partnerId)
@@ -104,7 +104,7 @@ class GetEventUseCaseTest {
         val ownerPartnerId = UUID.randomUUID()
         val otherPartnerId = UUID.randomUUID()
         val event = createTestEvent(partnerId = ownerPartnerId)
-        val eventId = eventRepository.add(event)
+        val eventId = unitOfWork.eventRepository.add(event)
 
         // Act
         val foundEvent = getEventUseCase.executeForPartner(eventId, otherPartnerId)

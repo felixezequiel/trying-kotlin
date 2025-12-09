@@ -1,9 +1,9 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.adapters.outbound.UnitOfWorkAdapter
 import events.application.dto.CreateEventRequest
 import events.application.dto.VenueRequest
 import events.application.useCases.CreateEventUseCase
 import events.domain.EventStatus
-import events.infrastructure.persistence.DatabaseContext
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -14,15 +14,15 @@ import org.junit.jupiter.api.Test
 
 class CreateEventUseCaseTest {
 
-        private lateinit var dbContext: DatabaseContext
-        private lateinit var eventRepository: EventRepositoryAdapter
+        private lateinit var eventStore: InMemoryEventStore
+        private lateinit var unitOfWork: UnitOfWorkAdapter
         private lateinit var createEventUseCase: CreateEventUseCase
 
         @BeforeEach
         fun setUp() {
-                dbContext = DatabaseContext()
-                eventRepository = EventRepositoryAdapter(dbContext)
-                createEventUseCase = CreateEventUseCase(eventRepository)
+                eventStore = InMemoryEventStore()
+                unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+                createEventUseCase = CreateEventUseCase(unitOfWork)
         }
 
         @Test
@@ -55,7 +55,7 @@ class CreateEventUseCaseTest {
 
                 // Assert
                 assertNotNull(eventId)
-                val event = eventRepository.getById(eventId)
+                val event = unitOfWork.eventRepository.getById(eventId)
                 assertNotNull(event)
                 assertEquals("Show de Rock", event?.name?.value)
                 assertEquals("Um grande show de rock", event?.description?.value)
@@ -94,7 +94,7 @@ class CreateEventUseCaseTest {
                 val eventId = createEventUseCase.execute(partnerId, request)
 
                 // Assert
-                val event = eventRepository.getById(eventId)
+                val event = unitOfWork.eventRepository.getById(eventId)
                 assertNotNull(event)
                 assertNull(event?.imageUrl)
                 assertNull(event?.venue?.capacity)

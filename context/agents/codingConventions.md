@@ -176,6 +176,171 @@ class CreateTicketTypeUseCase(...) {
 
 ---
 
+## Unit of Work
+
+> **Regra**: Toda operação que envolve persistência de dados DEVE utilizar o padrão Unit of Work.
+
+### Conceito
+
+O Unit of Work gerencia transações e garante consistência nas operações de dados, coordenando múltiplos repositórios em uma única transação.
+
+| Aspecto | Descrição |
+|---------|-----------|
+| **Interface** | `IUnitOfWork` em `application/ports/out/` |
+| **Implementação** | `UnitOfWorkAdapter` em `adapters/out/persistence/` |
+| **Responsabilidade** | Gerenciar transações e expor repositórios |
+
+### Padrão de Interface
+
+```kotlin
+// application/ports/out/IUnitOfWork.kt
+interface IUnitOfWork {
+    val userRepository: IUserRepository
+    val partnerRepository: IPartnerRepository
+    // ... outros repositórios
+    
+    suspend fun <T> transaction(block: suspend () -> T): T
+}
+```
+
+### Padrão de Uso em Use Cases
+
+```kotlin
+// application/useCases/CreatePartnerUseCase.kt
+class CreatePartnerUseCase(private val unitOfWork: IUnitOfWork) {
+    
+    suspend fun execute(request: CreatePartnerRequest): UUID {
+        return unitOfWork.transaction {
+            val partner = Partner(
+                name = CompanyName.of(request.name),
+                email = Email.of(request.email)
+            )
+            unitOfWork.partnerRepository.add(partner)
+        }
+    }
+}
+```
+
+### ❌ NÃO fazer
+
+```kotlin
+// Injetar repositório diretamente - ERRADO!
+class CreatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
+    suspend fun execute(request: CreatePartnerRequest): UUID {
+        // Sem controle transacional
+        return partnerRepository.add(partner)
+    }
+}
+```
+
+### ✅ Fazer
+
+```kotlin
+// Usar Unit of Work - CORRETO
+class CreatePartnerUseCase(private val unitOfWork: IUnitOfWork) {
+    suspend fun execute(request: CreatePartnerRequest): UUID {
+        return unitOfWork.transaction {
+            // Operações dentro de transação
+            unitOfWork.partnerRepository.add(partner)
+        }
+    }
+}
+```
+
+### Quando usar `transaction {}`
+
+| Usar `transaction {}` | Pode omitir |
+|-----------------------|-------------|
+| Operações de escrita (INSERT, UPDATE, DELETE) | Leituras simples (queries) |
+| Múltiplas operações que devem ser atômicas | Operações já dentro de outra transação |
+| Operações que dependem de consistência | - |
+
+### Justificativa
+
+- **Consistência**: Garante atomicidade em operações complexas
+- **Testabilidade**: Facilita mocking em testes unitários
+- **Desacoplamento**: Use Cases não conhecem detalhes de persistência
+- **Rollback automático**: Em caso de erro, todas as operações são revertidas
+
+### Abstração de Persistência
+
+> **ADR Relacionada**: [ADR-010: Unit of Work e Abstração de Persistência](../adrs/010-unit-of-work-persistence-abstraction.md)
+
+O Unit of Work deve ser implementado de forma que a troca de mecanismo de persistência (memória, PostgreSQL, MongoDB, etc.) seja **transparente** para os Use Cases.
+
+#### Regras de Implementação
+
+| Regra | Descrição |
+|-------|-----------|
+| **Repositórios injetados** | Repositórios devem ser injetados no UnitOfWork, não criados internamente |
+| **TransactionManager abstrato** | Usar interface `ITransactionManager` para gerenciar transações |
+| **Sem vazamento de infra** | `DatabaseContext` ou conexões de banco não devem vazar para adapters |
+
+#### ❌ NÃO fazer (vazamento de infraestrutura)
+
+```kotlin
+// UnitOfWorkAdapter - ERRADO!
+// DatabaseContext é classe concreta de infraestrutura
+class UnitOfWorkAdapter(private val dbContext: DatabaseContext) : IUnitOfWork {
+    override fun eventRepository(): IEventRepository {
+        return EventRepositoryAdapter(dbContext) // Cria nova instância sempre!
+    }
+}
+```
+
+#### ✅ Fazer (abstração correta)
+
+```kotlin
+// application/ports/out/ITransactionManager.kt
+interface ITransactionManager {
+    suspend fun <T> execute(block: suspend () -> T): T
+}
+
+// adapters/out/persistence/UnitOfWorkAdapter.kt
+class UnitOfWorkAdapter(
+    override val eventRepository: IEventRepository,
+    private val transactionManager: ITransactionManager
+) : IUnitOfWork {
+    override suspend fun <T> runInTransaction(block: suspend () -> T): T {
+        return transactionManager.execute(block)
+    }
+}
+```
+
+#### EventStore - Encapsulamento completo
+
+Para garantir que detalhes de infraestrutura não vazem, criamos um `EventStore` que encapsula repositório e transaction manager:
+
+```kotlin
+// adapters/out/InMemoryEventStore.kt
+class InMemoryEventStore {
+    private val events = mutableListOf<Event>()
+    
+    val repository: IEventRepository = InMemoryEventRepository()
+    val transactionManager: ITransactionManager = InMemoryTransactionManagerImpl()
+    
+    // Classes internas que compartilham o estado `events`
+    private inner class InMemoryEventRepository : IEventRepository { ... }
+    private inner class InMemoryTransactionManagerImpl : ITransactionManager { ... }
+}
+```
+
+#### Composição na Application
+
+```kotlin
+// infrastructure/web/Application.kt
+
+// Para memória:
+val eventStore = InMemoryEventStore()
+val unitOfWork = UnitOfWorkAdapter(eventStore.repository, eventStore.transactionManager)
+
+// Para PostgreSQL - bastaria criar e trocar:
+// val postgresStore = PostgresEventStore(connectionString)
+// val unitOfWork = UnitOfWorkAdapter(postgresStore.repository, postgresStore.transactionManager)
+```
+
+---
+
 ## Anti-Patterns a Evitar
 
 1. **Dependências circulares**: Domain nunca deve importar de Application ou Infrastructure
@@ -186,6 +351,8 @@ class CreateTicketTypeUseCase(...) {
 6. **Ignorar erros**: Sempre trate exceções adequadamente
 7. **DTOs de domínio em shared**: Cada Bounded Context deve ter seus próprios DTOs (ver ADR-002)
 8. **Validações em Use Cases**: Encapsular em Value Objects (ver ADR-009)
+9. **Injetar repositórios diretamente em Use Cases**: Sempre usar Unit of Work para operações de dados
+10. **Vazamento de infraestrutura em Adapters**: DatabaseContext ou conexões não devem ser dependências de Adapters (ver ADR-010)
 
 ## Boas Práticas
 
