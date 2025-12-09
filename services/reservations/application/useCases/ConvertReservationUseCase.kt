@@ -1,7 +1,7 @@
 package reservations.application.useCases
 
 import java.util.UUID
-import reservations.application.ports.outbound.IReservationRepository
+import reservations.application.ports.outbound.IUnitOfWork
 import reservations.domain.Reservation
 import reservations.domain.ReservationStatus
 
@@ -9,10 +9,10 @@ import reservations.domain.ReservationStatus
  * Use case para converter uma reserva em pedido. Chamado internamente pelo Orders Service quando um
  * pedido é criado.
  */
-class ConvertReservationUseCase(private val reservationRepository: IReservationRepository) {
+class ConvertReservationUseCase(private val unitOfWork: IUnitOfWork) {
     fun execute(reservationId: UUID, orderId: UUID): Reservation {
         val reservation =
-                reservationRepository.findById(reservationId)
+                unitOfWork.reservationRepository.findById(reservationId)
                         ?: throw IllegalArgumentException("Reserva não encontrada: $reservationId")
 
         require(reservation.status == ReservationStatus.ACTIVE) {
@@ -20,6 +20,6 @@ class ConvertReservationUseCase(private val reservationRepository: IReservationR
         }
 
         val convertedReservation = reservation.convert(orderId)
-        return reservationRepository.update(convertedReservation)
+        return unitOfWork.reservationRepository.update(convertedReservation)
     }
 }

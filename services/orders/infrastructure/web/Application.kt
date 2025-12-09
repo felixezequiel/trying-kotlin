@@ -15,10 +15,10 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import orders.adapters.inbound.OrderController
 import orders.adapters.inbound.TicketController
-import orders.adapters.outbound.IssuedTicketRepositoryAdapter
+import orders.adapters.outbound.InMemoryOrderStore
 import orders.adapters.outbound.MockPaymentGatewayAdapter
-import orders.adapters.outbound.OrderRepositoryAdapter
 import orders.adapters.outbound.ReservationsClientAdapter
+import orders.adapters.outbound.UnitOfWorkAdapter
 import orders.application.dto.ErrorResponse
 import orders.application.useCases.CreateOrderUseCase
 import orders.application.useCases.GetIssuedTicketUseCase
@@ -28,7 +28,6 @@ import orders.application.useCases.ListOrderTicketsUseCase
 import orders.application.useCases.ProcessPaymentUseCase
 import orders.application.useCases.RefundOrderUseCase
 import orders.application.useCases.ValidateTicketUseCase
-import orders.infrastructure.persistence.DatabaseContext
 
 fun Application.configureRouting() {
     install(ContentNegotiation) {
@@ -50,29 +49,28 @@ fun Application.configureRouting() {
         }
     }
 
-    // Inicialização das dependências
-    val dbContext = DatabaseContext()
-    val orderRepository = OrderRepositoryAdapter(dbContext)
-    val issuedTicketRepository = IssuedTicketRepositoryAdapter(dbContext)
+    // Inicialização das dependências (Composição Root)
+    // Para trocar para PostgreSQL, basta criar PostgresOrderStore e usar aqui
+    val orderStore = InMemoryOrderStore()
+    val unitOfWork =
+            UnitOfWorkAdapter(
+                    orderStore.orderRepository,
+                    orderStore.issuedTicketRepository,
+                    orderStore.transactionManager
+            )
     val paymentGateway = MockPaymentGatewayAdapter()
     val reservationsClient = ReservationsClientAdapter()
 
     // Use Cases
-    val createOrderUseCase = CreateOrderUseCase(orderRepository, reservationsClient)
+    val createOrderUseCase = CreateOrderUseCase(unitOfWork, reservationsClient)
     val processPaymentUseCase =
-            ProcessPaymentUseCase(
-                    orderRepository,
-                    issuedTicketRepository,
-                    paymentGateway,
-                    reservationsClient
-            )
-    val getOrderUseCase = GetOrderUseCase(orderRepository)
-    val listCustomerOrdersUseCase = ListCustomerOrdersUseCase(orderRepository)
-    val listOrderTicketsUseCase = ListOrderTicketsUseCase(orderRepository, issuedTicketRepository)
-    val refundOrderUseCase =
-            RefundOrderUseCase(orderRepository, issuedTicketRepository, paymentGateway)
-    val getIssuedTicketUseCase = GetIssuedTicketUseCase(issuedTicketRepository)
-    val validateTicketUseCase = ValidateTicketUseCase(issuedTicketRepository)
+            ProcessPaymentUseCase(unitOfWork, paymentGateway, reservationsClient)
+    val getOrderUseCase = GetOrderUseCase(unitOfWork)
+    val listCustomerOrdersUseCase = ListCustomerOrdersUseCase(unitOfWork)
+    val listOrderTicketsUseCase = ListOrderTicketsUseCase(unitOfWork)
+    val refundOrderUseCase = RefundOrderUseCase(unitOfWork, paymentGateway)
+    val getIssuedTicketUseCase = GetIssuedTicketUseCase(unitOfWork)
+    val validateTicketUseCase = ValidateTicketUseCase(unitOfWork)
 
     // Controllers
     val orderController =

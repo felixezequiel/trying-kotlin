@@ -2,24 +2,25 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import partners.adapters.outbound.PartnerRepositoryAdapter
+import partners.adapters.outbound.InMemoryPartnerStore
+import partners.adapters.outbound.UnitOfWorkAdapter
 import partners.application.dto.CreatePartnerRequest
 import partners.application.useCases.CreatePartnerUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
-import partners.infrastructure.persistence.DatabaseContext
 
 class CreatePartnerUseCaseTest {
 
-        private lateinit var dbContext: DatabaseContext
-        private lateinit var partnerRepository: PartnerRepositoryAdapter
+        private lateinit var partnerStore: InMemoryPartnerStore
+        private lateinit var unitOfWork: UnitOfWorkAdapter
         private lateinit var createPartnerUseCase: CreatePartnerUseCase
 
         @BeforeEach
         fun setUp() {
-                dbContext = DatabaseContext()
-                partnerRepository = PartnerRepositoryAdapter(dbContext)
-                createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
+                partnerStore = InMemoryPartnerStore()
+                unitOfWork =
+                        UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
+                createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
         }
 
         @Test
@@ -40,7 +41,7 @@ class CreatePartnerUseCaseTest {
 
                 // Assert
                 assertNotNull(partnerId)
-                val partner = partnerRepository.getById(partnerId)
+                val partner = partnerStore.repository.getById(partnerId)
                 assertNotNull(partner)
                 assertEquals("Empresa Teste", partner?.companyName?.value)
                 assertEquals("Teste LTDA", partner?.tradeName)
@@ -67,7 +68,7 @@ class CreatePartnerUseCaseTest {
                 val partnerId = createPartnerUseCase.execute(userId = 2L, request = request)
 
                 // Assert
-                val partner = partnerRepository.getById(partnerId)
+                val partner = partnerStore.repository.getById(partnerId)
                 assertNotNull(partner)
                 assertEquals(DocumentType.CPF, partner?.documentType)
                 assertNull(partner?.tradeName)

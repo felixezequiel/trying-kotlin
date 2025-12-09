@@ -2,7 +2,8 @@ package orders.application.useCases
 
 import java.math.BigDecimal
 import java.util.UUID
-import orders.application.ports.outbound.IOrderRepository
+import orders.adapters.outbound.InMemoryOrderStore
+import orders.adapters.outbound.UnitOfWorkAdapter
 import orders.domain.Order
 import orders.domain.OrderItem
 import orders.domain.valueObjects.Price
@@ -13,13 +14,20 @@ import org.junit.jupiter.api.Test
 
 class ListCustomerOrdersUseCaseTest {
 
-    private lateinit var orderRepository: FakeOrderRepository
+    private lateinit var orderStore: InMemoryOrderStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var useCase: ListCustomerOrdersUseCase
 
     @BeforeEach
     fun setup() {
-        orderRepository = FakeOrderRepository()
-        useCase = ListCustomerOrdersUseCase(orderRepository)
+        orderStore = InMemoryOrderStore()
+        unitOfWork =
+                UnitOfWorkAdapter(
+                        orderStore.orderRepository,
+                        orderStore.issuedTicketRepository,
+                        orderStore.transactionManager
+                )
+        useCase = ListCustomerOrdersUseCase(unitOfWork)
     }
 
     private fun createOrder(customerId: UUID): Order {
@@ -45,9 +53,9 @@ class ListCustomerOrdersUseCaseTest {
         val order2 = createOrder(customerId)
         val otherOrder = createOrder(UUID.randomUUID())
 
-        orderRepository.save(order1)
-        orderRepository.save(order2)
-        orderRepository.save(otherOrder)
+        orderStore.orderRepository.save(order1)
+        orderStore.orderRepository.save(order2)
+        orderStore.orderRepository.save(otherOrder)
 
         val result = useCase.execute(customerId)
 
@@ -60,28 +68,5 @@ class ListCustomerOrdersUseCaseTest {
         val customerId = UUID.randomUUID()
         val result = useCase.execute(customerId)
         assertTrue(result.isEmpty())
-    }
-
-    // Fake implementation
-    private class FakeOrderRepository : IOrderRepository {
-        private val orders = mutableMapOf<UUID, Order>()
-
-        override fun save(order: Order): Order {
-            orders[order.id] = order
-            return order
-        }
-
-        override fun findById(id: UUID): Order? = orders[id]
-
-        override fun findByCustomerId(customerId: UUID): List<Order> =
-                orders.values.filter { it.customerId == customerId }
-
-        override fun findByReservationId(reservationId: UUID): Order? =
-                orders.values.find { it.reservationId == reservationId }
-
-        override fun update(order: Order): Order {
-            orders[order.id] = order
-            return order
-        }
     }
 }

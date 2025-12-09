@@ -1,12 +1,12 @@
 package orders.application.useCases
 
 import java.util.UUID
-import orders.application.ports.outbound.IOrderRepository
+import orders.application.ports.outbound.IUnitOfWork
 import orders.domain.Order
 
-class GetOrderUseCase(private val orderRepository: IOrderRepository) {
+class GetOrderUseCase(private val unitOfWork: IUnitOfWork) {
 
     fun execute(orderId: UUID): Order? {
-        return orderRepository.findById(orderId)
+        return unitOfWork.orderRepository.findById(orderId)
     }
 }

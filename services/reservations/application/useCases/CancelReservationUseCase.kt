@@ -1,8 +1,8 @@
 package reservations.application.useCases
 
 import java.util.UUID
-import reservations.application.ports.outbound.IReservationRepository
 import reservations.application.ports.outbound.ITicketsClient
+import reservations.application.ports.outbound.IUnitOfWork
 import reservations.domain.CancellationType
 import reservations.domain.Reservation
 import reservations.domain.ReservationStatus
@@ -17,7 +17,7 @@ import reservations.domain.ReservationStatus
  * - RN-R10: Cancelamento libera ingressos imediatamente
  */
 class CancelReservationUseCase(
-        private val reservationRepository: IReservationRepository,
+        private val unitOfWork: IUnitOfWork,
         private val ticketsClient: ITicketsClient
 ) {
     fun execute(
@@ -27,7 +27,7 @@ class CancelReservationUseCase(
             cancellationType: CancellationType
     ): Reservation {
         val reservation =
-                reservationRepository.findById(reservationId)
+                unitOfWork.reservationRepository.findById(reservationId)
                         ?: throw IllegalArgumentException("Reserva não encontrada: $reservationId")
 
         require(reservation.status == ReservationStatus.ACTIVE) {
@@ -52,6 +52,6 @@ class CancelReservationUseCase(
                         cancellationType = cancellationType
                 )
 
-        return reservationRepository.update(cancelledReservation)
+        return unitOfWork.reservationRepository.update(cancelledReservation)
     }
 }

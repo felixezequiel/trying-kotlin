@@ -1,16 +1,16 @@
 package partners.application.useCases
 
-import partners.application.ports.outbound.IPartnerRepository
+import partners.application.ports.outbound.IUnitOfWork
 import partners.domain.Partner
 import partners.domain.PartnerStatus
 
-class ListPartnersUseCase(private val partnerRepository: IPartnerRepository) {
+class ListPartnersUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(): List<Partner> {
-        return partnerRepository.getAll()
+        return unitOfWork.partnerRepository.getAll()
     }
 
     suspend fun executeByStatus(status: PartnerStatus): List<Partner> {
-        return partnerRepository.getByStatus(status)
+        return unitOfWork.partnerRepository.getByStatus(status)
     }
 }

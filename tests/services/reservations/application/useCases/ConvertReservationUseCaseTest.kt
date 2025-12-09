@@ -9,17 +9,20 @@ import reservations.application.useCases.ConvertReservationUseCase
 import reservations.domain.CancellationType
 import reservations.domain.ReservationStatus
 import services.reservations.FakeReservationRepository
+import services.reservations.FakeUnitOfWork
 import services.reservations.TestHelpers
 
 class ConvertReservationUseCaseTest {
 
     private lateinit var reservationRepository: FakeReservationRepository
+    private lateinit var unitOfWork: FakeUnitOfWork
     private lateinit var convertReservationUseCase: ConvertReservationUseCase
 
     @BeforeEach
     fun setUp() {
         reservationRepository = FakeReservationRepository()
-        convertReservationUseCase = ConvertReservationUseCase(reservationRepository)
+        unitOfWork = FakeUnitOfWork(reservationRepository)
+        convertReservationUseCase = ConvertReservationUseCase(unitOfWork)
     }
 
     @Test

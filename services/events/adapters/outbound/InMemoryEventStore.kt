@@ -1,6 +1,7 @@
 package events.adapters.outbound
 
 import events.application.ports.outbound.IEventRepository
+import events.application.ports.outbound.IEventStore
 import events.application.ports.outbound.ITransactionManager
 import events.domain.Event
 import events.domain.EventStatus
@@ -10,12 +11,15 @@ import java.util.UUID
 /**
  * Store em memória que gerencia eventos e transações. Esta classe encapsula tanto o repositório
  * quanto o gerenciador de transações para persistência em memória.
+ *
+ * Implementa IEventStore para garantir que qualquer implementação (Postgres, etc.) tenha o mesmo
+ * contrato.
  */
-class InMemoryEventStore {
+class InMemoryEventStore : IEventStore {
     private val events = mutableListOf<Event>()
 
-    val repository: IEventRepository = InMemoryEventRepository()
-    val transactionManager: ITransactionManager = InMemoryTransactionManagerImpl()
+    override val repository: IEventRepository = InMemoryEventRepository()
+    override val transactionManager: ITransactionManager = InMemoryTransactionManagerImpl()
 
     private inner class InMemoryEventRepository : IEventRepository {
         override suspend fun add(event: Event): UUID {

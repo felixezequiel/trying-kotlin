@@ -2,21 +2,21 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import users.adapters.outbound.UnitOfWorkAdapter
+import services.users.FakeUnitOfWork
+import services.users.FakeUserRepository
 import users.application.useCases.UserUseCase
 import users.domain.valueObjects.UserEmail
-import users.infrastructure.persistence.DatabaseContext
 
 class UserUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var unitOfWork: UnitOfWorkAdapter
+    private lateinit var userRepository: FakeUserRepository
+    private lateinit var unitOfWork: FakeUnitOfWork
     private lateinit var userUseCase: UserUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        unitOfWork = UnitOfWorkAdapter(dbContext)
+        userRepository = FakeUserRepository()
+        unitOfWork = FakeUnitOfWork(userRepository)
         userUseCase = UserUseCase(unitOfWork)
     }
 
@@ -24,7 +24,6 @@ class UserUseCaseTest {
     fun `deve registrar usuário com sucesso`() = runTest {
         userUseCase.registerUser("Alice", "alice@example.com")
 
-        val userRepository = unitOfWork.userRepository()
         val foundUser = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNotNull(foundUser)
         assertEquals("Alice", foundUser?.name?.value)
@@ -89,7 +88,6 @@ class UserUseCaseTest {
         userUseCase.registerUser("Bob", "bob@example.com")
         userUseCase.registerUser("Charlie", "charlie@example.com")
 
-        val userRepository = unitOfWork.userRepository()
         val user1 = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         val user2 = userRepository.getUserByEmail(UserEmail.of("bob@example.com"))
         val user3 = userRepository.getUserByEmail(UserEmail.of("charlie@example.com"))
@@ -115,7 +113,6 @@ class UserUseCaseTest {
         }
 
         // Verifica que apenas o primeiro usuário foi registrado
-        val userRepository = unitOfWork.userRepository()
         val user1 = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         val user2 = userRepository.getUserByEmail(UserEmail.of("bob@example.com"))
 

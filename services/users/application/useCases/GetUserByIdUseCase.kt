@@ -1,11 +1,11 @@
 package users.application.useCases
 
-import users.application.ports.outbound.IUserRepository
+import users.application.ports.outbound.IUnitOfWork
 import users.domain.User
 
-class GetUserByIdUseCase(private val userRepository: IUserRepository) {
-    
+class GetUserByIdUseCase(private val unitOfWork: IUnitOfWork) {
+
     suspend fun execute(userId: Long): User? {
-        return userRepository.getById(userId)
+        return unitOfWork.userRepository.getById(userId)
     }
 }

@@ -1,7 +1,7 @@
 package reservations.application.useCases
 
 import java.util.UUID
-import reservations.application.ports.outbound.IReservationRepository
+import reservations.application.ports.outbound.IUnitOfWork
 import reservations.domain.Reservation
 
 /**
@@ -10,8 +10,8 @@ import reservations.domain.Reservation
  * Regras de negócio:
  * - CUSTOMER só pode ver suas próprias reservas
  */
-class ListCustomerReservationsUseCase(private val reservationRepository: IReservationRepository) {
+class ListCustomerReservationsUseCase(private val unitOfWork: IUnitOfWork) {
     fun execute(customerId: UUID): List<Reservation> {
-        return reservationRepository.findByCustomerId(customerId)
+        return unitOfWork.reservationRepository.findByCustomerId(customerId)
     }
 }

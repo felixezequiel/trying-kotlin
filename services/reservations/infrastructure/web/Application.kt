@@ -14,8 +14,9 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import reservations.adapters.inbound.ReservationController
-import reservations.adapters.outbound.ReservationRepositoryAdapter
+import reservations.adapters.outbound.InMemoryReservationStore
 import reservations.adapters.outbound.TicketsClientAdapter
+import reservations.adapters.outbound.UnitOfWorkAdapter
 import reservations.application.dto.ErrorResponse
 import reservations.application.useCases.CancelReservationUseCase
 import reservations.application.useCases.ConvertReservationUseCase
@@ -23,7 +24,6 @@ import reservations.application.useCases.CreateReservationUseCase
 import reservations.application.useCases.GetReservationUseCase
 import reservations.application.useCases.ListCustomerReservationsUseCase
 import reservations.application.useCases.ListEventReservationsUseCase
-import reservations.infrastructure.persistence.DatabaseContext
 
 fun Application.configureRouting() {
     install(ContentNegotiation) {
@@ -45,18 +45,20 @@ fun Application.configureRouting() {
         }
     }
 
-    // Inicialização das dependências
-    val dbContext = DatabaseContext()
-    val reservationRepository = ReservationRepositoryAdapter(dbContext)
+    // Inicialização das dependências (Composição Root)
+    // Para trocar para PostgreSQL, basta criar PostgresReservationStore e usar aqui
+    val reservationStore = InMemoryReservationStore()
+    val unitOfWork =
+            UnitOfWorkAdapter(reservationStore.repository, reservationStore.transactionManager)
     val ticketsClient = TicketsClientAdapter()
 
     // Use Cases
-    val createReservationUseCase = CreateReservationUseCase(reservationRepository, ticketsClient)
-    val cancelReservationUseCase = CancelReservationUseCase(reservationRepository, ticketsClient)
-    val convertReservationUseCase = ConvertReservationUseCase(reservationRepository)
-    val getReservationUseCase = GetReservationUseCase(reservationRepository)
-    val listCustomerReservationsUseCase = ListCustomerReservationsUseCase(reservationRepository)
-    val listEventReservationsUseCase = ListEventReservationsUseCase(reservationRepository)
+    val createReservationUseCase = CreateReservationUseCase(unitOfWork, ticketsClient)
+    val cancelReservationUseCase = CancelReservationUseCase(unitOfWork, ticketsClient)
+    val convertReservationUseCase = ConvertReservationUseCase(unitOfWork)
+    val getReservationUseCase = GetReservationUseCase(unitOfWork)
+    val listCustomerReservationsUseCase = ListCustomerReservationsUseCase(unitOfWork)
+    val listEventReservationsUseCase = ListEventReservationsUseCase(unitOfWork)
 
     // Controller
     val reservationController =

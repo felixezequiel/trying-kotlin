@@ -12,15 +12,12 @@ class UserUseCase(private val unitOfWork: IUnitOfWork) {
         val userEmail = UserEmail.of(email)
 
         unitOfWork.runInTransaction {
-            val userRepository = unitOfWork.userRepository()
-
-            if (userRepository.getUserByEmail(userEmail) != null) {
+            if (unitOfWork.userRepository.getUserByEmail(userEmail) != null) {
                 throw IllegalStateException("Usuário com este e-mail já existe.")
             }
 
             val newUser = User(name = userName, email = userEmail)
-            val userId = userRepository.add(newUser)
-            println("Usuário registrado com ID: $userId")
+            unitOfWork.userRepository.add(newUser)
         }
     }
 }

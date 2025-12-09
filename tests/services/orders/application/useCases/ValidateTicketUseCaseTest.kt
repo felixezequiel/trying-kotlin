@@ -1,7 +1,9 @@
 package orders.application.useCases
 
 import java.util.UUID
-import orders.application.ports.outbound.IIssuedTicketRepository
+import kotlinx.coroutines.runBlocking
+import orders.adapters.outbound.InMemoryOrderStore
+import orders.adapters.outbound.UnitOfWorkAdapter
 import orders.domain.IssuedTicket
 import orders.domain.TicketStatus
 import org.junit.jupiter.api.Assertions.*
@@ -11,13 +13,20 @@ import org.junit.jupiter.api.assertThrows
 
 class ValidateTicketUseCaseTest {
 
-    private lateinit var ticketRepository: FakeIssuedTicketRepository
+    private lateinit var orderStore: InMemoryOrderStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var useCase: ValidateTicketUseCase
 
     @BeforeEach
     fun setup() {
-        ticketRepository = FakeIssuedTicketRepository()
-        useCase = ValidateTicketUseCase(ticketRepository)
+        orderStore = InMemoryOrderStore()
+        unitOfWork =
+                UnitOfWorkAdapter(
+                        orderStore.orderRepository,
+                        orderStore.issuedTicketRepository,
+                        orderStore.transactionManager
+                )
+        useCase = ValidateTicketUseCase(unitOfWork)
     }
 
     private fun createTicket(): IssuedTicket {
@@ -33,9 +42,9 @@ class ValidateTicketUseCaseTest {
     }
 
     @Test
-    fun `deve validar ingresso valido`() {
+    fun `deve validar ingresso valido`() = runBlocking {
         val ticket = createTicket()
-        ticketRepository.save(ticket)
+        orderStore.issuedTicketRepository.save(ticket)
 
         val validatedTicket = useCase.execute(ticket.code.value)
 
@@ -44,15 +53,15 @@ class ValidateTicketUseCaseTest {
     }
 
     @Test
-    fun `deve lancar excecao para ingresso nao encontrado`() {
+    fun `deve lancar excecao para ingresso nao encontrado`() = runBlocking {
         val exception = assertThrows<IllegalArgumentException> { useCase.execute("TKT-NOTFOUND") }
         assertTrue(exception.message!!.contains("não encontrado"))
     }
 
     @Test
-    fun `deve lancar excecao para ingresso ja usado`() {
+    fun `deve lancar excecao para ingresso ja usado`() = runBlocking {
         val ticket = createTicket()
-        ticketRepository.save(ticket)
+        orderStore.issuedTicketRepository.save(ticket)
 
         // Usa o ingresso
         useCase.execute(ticket.code.value)
@@ -63,44 +72,11 @@ class ValidateTicketUseCaseTest {
     }
 
     @Test
-    fun `deve lancar excecao para ingresso cancelado`() {
+    fun `deve lancar excecao para ingresso cancelado`() = runBlocking {
         val ticket = createTicket().cancel()
-        ticketRepository.save(ticket)
+        orderStore.issuedTicketRepository.save(ticket)
 
         val exception = assertThrows<IllegalStateException> { useCase.execute(ticket.code.value) }
         assertTrue(exception.message!!.contains("cancelado"))
-    }
-
-    // Fake implementation
-    private class FakeIssuedTicketRepository : IIssuedTicketRepository {
-        private val tickets = mutableMapOf<UUID, IssuedTicket>()
-
-        override fun save(ticket: IssuedTicket): IssuedTicket {
-            tickets[ticket.id] = ticket
-            return ticket
-        }
-
-        override fun saveAll(tickets: List<IssuedTicket>): List<IssuedTicket> {
-            tickets.forEach { this.tickets[it.id] = it }
-            return tickets
-        }
-
-        override fun findById(id: UUID): IssuedTicket? = tickets[id]
-
-        override fun findByCode(code: String): IssuedTicket? =
-                tickets.values.find { it.code.value == code }
-
-        override fun findByOrderId(orderId: UUID): List<IssuedTicket> =
-                tickets.values.filter { it.orderId == orderId }
-
-        override fun update(ticket: IssuedTicket): IssuedTicket {
-            tickets[ticket.id] = ticket
-            return ticket
-        }
-
-        override fun updateAll(tickets: List<IssuedTicket>): List<IssuedTicket> {
-            tickets.forEach { this.tickets[it.id] = it }
-            return tickets
-        }
     }
 }

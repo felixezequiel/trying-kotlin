@@ -3,13 +3,13 @@ package tickets.application.useCases
 import java.time.Instant
 import java.util.UUID
 import tickets.application.dto.CreateTicketTypeRequest
-import tickets.application.ports.outbound.ITicketTypeRepository
+import tickets.application.ports.outbound.IUnitOfWork
 import tickets.domain.TicketType
 import tickets.domain.valueObjects.Price
 import tickets.domain.valueObjects.Quantity
 import tickets.domain.valueObjects.TicketName
 
-class CreateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeRepository) {
+class CreateTicketTypeUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(request: CreateTicketTypeRequest): UUID {
         val eventId =
@@ -47,6 +47,6 @@ class CreateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeRepos
                         salesEndDate = salesEndDate
                 )
 
-        return ticketTypeRepository.add(ticketType)
+        return unitOfWork.ticketTypeRepository.add(ticketType)
     }
 }

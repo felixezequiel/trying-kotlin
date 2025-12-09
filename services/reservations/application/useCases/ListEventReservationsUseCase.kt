@@ -1,7 +1,7 @@
 package reservations.application.useCases
 
 import java.util.UUID
-import reservations.application.ports.outbound.IReservationRepository
+import reservations.application.ports.outbound.IUnitOfWork
 import reservations.domain.Reservation
 
 /**
@@ -11,8 +11,8 @@ import reservations.domain.Reservation
  * - PARTNER só pode ver reservas de seus eventos
  * - ADMIN pode ver reservas de qualquer evento
  */
-class ListEventReservationsUseCase(private val reservationRepository: IReservationRepository) {
+class ListEventReservationsUseCase(private val unitOfWork: IUnitOfWork) {
     fun execute(eventId: UUID): List<Reservation> {
-        return reservationRepository.findByEventId(eventId)
+        return unitOfWork.reservationRepository.findByEventId(eventId)
     }
 }

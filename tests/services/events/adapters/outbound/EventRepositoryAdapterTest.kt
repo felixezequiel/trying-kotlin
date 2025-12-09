@@ -1,8 +1,8 @@
-import events.adapters.outbound.EventRepositoryAdapter
+import events.adapters.outbound.InMemoryEventStore
+import events.application.ports.outbound.IEventRepository
 import events.domain.Event
 import events.domain.EventStatus
 import events.domain.valueObjects.EventName
-import events.infrastructure.persistence.DatabaseContext
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -12,13 +12,13 @@ import services.events.TestHelpers
 
 class EventRepositoryAdapterTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var eventRepository: EventRepositoryAdapter
+    private lateinit var eventStore: InMemoryEventStore
+    private lateinit var eventRepository: IEventRepository
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        eventRepository = EventRepositoryAdapter(dbContext)
+        eventStore = InMemoryEventStore()
+        eventRepository = eventStore.repository
     }
 
     private fun createTestEvent(

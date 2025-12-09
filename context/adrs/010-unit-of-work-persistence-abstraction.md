@@ -66,23 +66,40 @@ class UnitOfWorkAdapter(
 }
 ```
 
+### IEventStore - Interface para garantir contrato
+
+Para garantir que qualquer implementação de Store (InMemory, Postgres, etc.) tenha o mesmo contrato, criamos uma interface:
+
+```kotlin
+// application/ports/out/IEventStore.kt
+interface IEventStore {
+    val repository: IEventRepository
+    val transactionManager: ITransactionManager
+}
+```
+
 ### EventStore - Encapsulamento completo
 
-Para garantir que detalhes de infraestrutura não vazem, criamos um `EventStore` que encapsula tanto o repositório quanto o transaction manager:
+A implementação em memória implementa a interface `IEventStore`:
 
 ```kotlin
 // adapters/out/InMemoryEventStore.kt
-class InMemoryEventStore {
+class InMemoryEventStore : IEventStore {
     private val events = mutableListOf<Event>()
     
-    val repository: IEventRepository = InMemoryEventRepository()
-    val transactionManager: ITransactionManager = InMemoryTransactionManagerImpl()
+    override val repository: IEventRepository = InMemoryEventRepository()
+    override val transactionManager: ITransactionManager = InMemoryTransactionManagerImpl()
     
     // Classes internas que compartilham o estado `events`
     private inner class InMemoryEventRepository : IEventRepository { ... }
     private inner class InMemoryTransactionManagerImpl : ITransactionManager { ... }
 }
 ```
+
+**Benefícios da interface `IEventStore`:**
+1. Garante que qualquer Store tenha `repository` e `transactionManager`
+2. Permite trocar implementações sem risco de esquecer propriedades
+3. Facilita testes com mocks
 
 ### Composição na camada de infraestrutura
 

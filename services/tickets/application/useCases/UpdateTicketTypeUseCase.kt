@@ -3,18 +3,18 @@ package tickets.application.useCases
 import java.time.Instant
 import java.util.UUID
 import tickets.application.dto.UpdateTicketTypeRequest
-import tickets.application.ports.outbound.ITicketTypeRepository
+import tickets.application.ports.outbound.IUnitOfWork
 import tickets.domain.TicketType
 import tickets.domain.TicketTypeStatus
 import tickets.domain.valueObjects.Price
 import tickets.domain.valueObjects.Quantity
 import tickets.domain.valueObjects.TicketName
 
-class UpdateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeRepository) {
+class UpdateTicketTypeUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(ticketTypeId: UUID, request: UpdateTicketTypeRequest): TicketType {
         val existingTicketType =
-                ticketTypeRepository.getById(ticketTypeId)
+                unitOfWork.ticketTypeRepository.getById(ticketTypeId)
                         ?: throw IllegalArgumentException("Tipo de ingresso não encontrado")
 
         // Validação encapsulada nos Value Objects
@@ -56,7 +56,7 @@ class UpdateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeRepos
                         updatedAt = Instant.now()
                 )
 
-        val success = ticketTypeRepository.update(updatedTicketType)
+        val success = unitOfWork.ticketTypeRepository.update(updatedTicketType)
         if (!success) {
             throw IllegalStateException("Falha ao atualizar tipo de ingresso")
         }

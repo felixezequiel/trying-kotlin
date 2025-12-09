@@ -3,11 +3,11 @@ package tickets.application.useCases
 import java.util.UUID
 import tickets.application.dto.ReserveTicketsRequest
 import tickets.application.dto.ReserveTicketsResponse
-import tickets.application.ports.outbound.ITicketTypeRepository
+import tickets.application.ports.outbound.IUnitOfWork
 import tickets.domain.TicketTypeStatus
 import tickets.domain.valueObjects.Quantity
 
-class ReserveTicketsUseCase(private val ticketTypeRepository: ITicketTypeRepository) {
+class ReserveTicketsUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(request: ReserveTicketsRequest): ReserveTicketsResponse {
         val ticketTypeId =
@@ -21,7 +21,7 @@ class ReserveTicketsUseCase(private val ticketTypeRepository: ITicketTypeReposit
         val quantity = Quantity.positive(request.quantity)
 
         val ticketType =
-                ticketTypeRepository.getById(ticketTypeId)
+                unitOfWork.ticketTypeRepository.getById(ticketTypeId)
                         ?: throw IllegalArgumentException("Tipo de ingresso não encontrado")
 
         // RN-T08: Não pode reservar se status != ACTIVE
@@ -44,13 +44,14 @@ class ReserveTicketsUseCase(private val ticketTypeRepository: ITicketTypeReposit
         }
 
         // Operação atômica de decremento
-        val success = ticketTypeRepository.decrementAvailableQuantity(ticketTypeId, quantity)
+        val success =
+                unitOfWork.ticketTypeRepository.decrementAvailableQuantity(ticketTypeId, quantity)
         if (!success) {
             throw IllegalStateException("Falha ao reservar ingressos. Tente novamente.")
         }
 
         // Buscar estado atualizado
-        val updatedTicketType = ticketTypeRepository.getById(ticketTypeId)!!
+        val updatedTicketType = unitOfWork.ticketTypeRepository.getById(ticketTypeId)!!
 
         return ReserveTicketsResponse(
                 success = true,

@@ -1,16 +1,16 @@
 package partners.application.useCases
 
 import java.util.UUID
-import partners.application.ports.outbound.IPartnerRepository
+import partners.application.ports.outbound.IUnitOfWork
 import partners.domain.Partner
 
-class GetPartnerUseCase(private val partnerRepository: IPartnerRepository) {
+class GetPartnerUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(partnerId: UUID): Partner? {
-        return partnerRepository.getById(partnerId)
+        return unitOfWork.partnerRepository.getById(partnerId)
     }
 
     suspend fun executeByUserId(userId: Long): Partner? {
-        return partnerRepository.getByUserId(userId)
+        return unitOfWork.partnerRepository.getByUserId(userId)
     }
 }

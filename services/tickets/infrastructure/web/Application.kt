@@ -16,7 +16,8 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import tickets.adapters.inbound.TicketTypeController
-import tickets.adapters.outbound.TicketTypeRepositoryAdapter
+import tickets.adapters.outbound.InMemoryTicketStore
+import tickets.adapters.outbound.UnitOfWorkAdapter
 import tickets.application.dto.ErrorResponse
 import tickets.application.useCases.CreateTicketTypeUseCase
 import tickets.application.useCases.DeactivateTicketTypeUseCase
@@ -25,7 +26,6 @@ import tickets.application.useCases.ListTicketTypesByEventUseCase
 import tickets.application.useCases.ReleaseTicketsUseCase
 import tickets.application.useCases.ReserveTicketsUseCase
 import tickets.application.useCases.UpdateTicketTypeUseCase
-import tickets.infrastructure.persistence.DatabaseContext
 
 fun Application.configureRouting() {
     install(ContentNegotiation) {
@@ -47,18 +47,19 @@ fun Application.configureRouting() {
         }
     }
 
-    // Inicialização das dependências
-    val dbContext = DatabaseContext()
-    val ticketTypeRepository = TicketTypeRepositoryAdapter(dbContext)
+    // Inicialização das dependências (Composição Root)
+    // Para trocar para PostgreSQL, basta criar PostgresTicketStore e usar aqui
+    val ticketStore = InMemoryTicketStore()
+    val unitOfWork = UnitOfWorkAdapter(ticketStore.repository, ticketStore.transactionManager)
 
     // Use Cases
-    val createTicketTypeUseCase = CreateTicketTypeUseCase(ticketTypeRepository)
-    val updateTicketTypeUseCase = UpdateTicketTypeUseCase(ticketTypeRepository)
-    val deactivateTicketTypeUseCase = DeactivateTicketTypeUseCase(ticketTypeRepository)
-    val getTicketTypeUseCase = GetTicketTypeUseCase(ticketTypeRepository)
-    val listTicketTypesByEventUseCase = ListTicketTypesByEventUseCase(ticketTypeRepository)
-    val reserveTicketsUseCase = ReserveTicketsUseCase(ticketTypeRepository)
-    val releaseTicketsUseCase = ReleaseTicketsUseCase(ticketTypeRepository)
+    val createTicketTypeUseCase = CreateTicketTypeUseCase(unitOfWork)
+    val updateTicketTypeUseCase = UpdateTicketTypeUseCase(unitOfWork)
+    val deactivateTicketTypeUseCase = DeactivateTicketTypeUseCase(unitOfWork)
+    val getTicketTypeUseCase = GetTicketTypeUseCase(unitOfWork)
+    val listTicketTypesByEventUseCase = ListTicketTypesByEventUseCase(unitOfWork)
+    val reserveTicketsUseCase = ReserveTicketsUseCase(unitOfWork)
+    val releaseTicketsUseCase = ReleaseTicketsUseCase(unitOfWork)
 
     // Controller
     val ticketTypeController =

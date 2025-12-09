@@ -15,7 +15,8 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
 import partners.adapters.inbound.PartnerController
-import partners.adapters.outbound.PartnerRepositoryAdapter
+import partners.adapters.outbound.InMemoryPartnerStore
+import partners.adapters.outbound.UnitOfWorkAdapter
 import partners.application.dto.ErrorResponse
 import partners.application.useCases.ApprovePartnerUseCase
 import partners.application.useCases.CreatePartnerUseCase
@@ -25,7 +26,6 @@ import partners.application.useCases.ReactivatePartnerUseCase
 import partners.application.useCases.RejectPartnerUseCase
 import partners.application.useCases.SuspendPartnerUseCase
 import partners.application.useCases.UpdatePartnerUseCase
-import partners.infrastructure.persistence.DatabaseContext
 
 fun Application.configureRouting() {
     install(ContentNegotiation) {
@@ -47,19 +47,20 @@ fun Application.configureRouting() {
         }
     }
 
-    // Inicialização das dependências
-    val dbContext = DatabaseContext()
-    val partnerRepository = PartnerRepositoryAdapter(dbContext)
+    // Inicialização das dependências (Composição Root)
+    // Para trocar para PostgreSQL, basta criar PostgresPartnerStore e usar aqui
+    val partnerStore = InMemoryPartnerStore()
+    val unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
 
     // Use Cases
-    val createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
-    val updatePartnerUseCase = UpdatePartnerUseCase(partnerRepository)
-    val approvePartnerUseCase = ApprovePartnerUseCase(partnerRepository)
-    val rejectPartnerUseCase = RejectPartnerUseCase(partnerRepository)
-    val suspendPartnerUseCase = SuspendPartnerUseCase(partnerRepository)
-    val reactivatePartnerUseCase = ReactivatePartnerUseCase(partnerRepository)
-    val getPartnerUseCase = GetPartnerUseCase(partnerRepository)
-    val listPartnersUseCase = ListPartnersUseCase(partnerRepository)
+    val createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+    val updatePartnerUseCase = UpdatePartnerUseCase(unitOfWork)
+    val approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
+    val rejectPartnerUseCase = RejectPartnerUseCase(unitOfWork)
+    val suspendPartnerUseCase = SuspendPartnerUseCase(unitOfWork)
+    val reactivatePartnerUseCase = ReactivatePartnerUseCase(unitOfWork)
+    val getPartnerUseCase = GetPartnerUseCase(unitOfWork)
+    val listPartnersUseCase = ListPartnersUseCase(unitOfWork)
 
     // Controller
     val partnerController =

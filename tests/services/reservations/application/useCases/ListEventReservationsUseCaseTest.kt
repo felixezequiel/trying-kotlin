@@ -7,17 +7,20 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import reservations.application.useCases.ListEventReservationsUseCase
 import services.reservations.FakeReservationRepository
+import services.reservations.FakeUnitOfWork
 import services.reservations.TestHelpers
 
 class ListEventReservationsUseCaseTest {
 
     private lateinit var reservationRepository: FakeReservationRepository
+    private lateinit var unitOfWork: FakeUnitOfWork
     private lateinit var listEventReservationsUseCase: ListEventReservationsUseCase
 
     @BeforeEach
     fun setUp() {
         reservationRepository = FakeReservationRepository()
-        listEventReservationsUseCase = ListEventReservationsUseCase(reservationRepository)
+        unitOfWork = FakeUnitOfWork(reservationRepository)
+        listEventReservationsUseCase = ListEventReservationsUseCase(unitOfWork)
     }
 
     @Test

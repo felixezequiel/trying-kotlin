@@ -2,8 +2,8 @@ package reservations.application.useCases
 
 import java.util.UUID
 import reservations.application.dto.CreateReservationRequest
-import reservations.application.ports.outbound.IReservationRepository
 import reservations.application.ports.outbound.ITicketsClient
+import reservations.application.ports.outbound.IUnitOfWork
 import reservations.application.ports.outbound.TicketTypeInfo
 import reservations.domain.Reservation
 import reservations.domain.ReservationItem
@@ -20,7 +20,7 @@ import reservations.domain.valueObjects.Quantity
  * - RN-R05: Event deve estar PUBLISHED (validado pelo Tickets Service)
  */
 class CreateReservationUseCase(
-        private val reservationRepository: IReservationRepository,
+        private val unitOfWork: IUnitOfWork,
         private val ticketsClient: ITicketsClient
 ) {
     fun execute(customerId: UUID, request: CreateReservationRequest): Reservation {
@@ -73,7 +73,7 @@ class CreateReservationUseCase(
             val reservation =
                     Reservation.create(customerId = customerId, eventId = eventId, items = items)
 
-            return reservationRepository.save(reservation)
+            return unitOfWork.reservationRepository.save(reservation)
         } catch (e: Exception) {
             // Rollback: libera os ingressos já reservados
             for (reserved in reservedItems) {

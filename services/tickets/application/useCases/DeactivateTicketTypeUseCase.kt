@@ -2,15 +2,15 @@ package tickets.application.useCases
 
 import java.time.Instant
 import java.util.UUID
-import tickets.application.ports.outbound.ITicketTypeRepository
+import tickets.application.ports.outbound.IUnitOfWork
 import tickets.domain.TicketType
 import tickets.domain.TicketTypeStatus
 
-class DeactivateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeRepository) {
+class DeactivateTicketTypeUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(ticketTypeId: UUID): TicketType {
         val existingTicketType =
-                ticketTypeRepository.getById(ticketTypeId)
+                unitOfWork.ticketTypeRepository.getById(ticketTypeId)
                         ?: throw IllegalArgumentException("Tipo de ingresso não encontrado")
 
         if (existingTicketType.status == TicketTypeStatus.INACTIVE) {
@@ -23,7 +23,7 @@ class DeactivateTicketTypeUseCase(private val ticketTypeRepository: ITicketTypeR
                         updatedAt = Instant.now()
                 )
 
-        val success = ticketTypeRepository.update(deactivatedTicketType)
+        val success = unitOfWork.ticketTypeRepository.update(deactivatedTicketType)
         if (!success) {
             throw IllegalStateException("Falha ao desativar tipo de ingresso")
         }

@@ -3,26 +3,26 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import partners.adapters.outbound.PartnerRepositoryAdapter
+import partners.adapters.outbound.InMemoryPartnerStore
+import partners.adapters.outbound.UnitOfWorkAdapter
 import partners.application.dto.CreatePartnerRequest
 import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.GetPartnerUseCase
 import partners.domain.DocumentType
-import partners.infrastructure.persistence.DatabaseContext
 
 class GetPartnerUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var partnerRepository: PartnerRepositoryAdapter
+    private lateinit var partnerStore: InMemoryPartnerStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var createPartnerUseCase: CreatePartnerUseCase
     private lateinit var getPartnerUseCase: GetPartnerUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        partnerRepository = PartnerRepositoryAdapter(dbContext)
-        createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
-        getPartnerUseCase = GetPartnerUseCase(partnerRepository)
+        partnerStore = InMemoryPartnerStore()
+        unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
+        createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+        getPartnerUseCase = GetPartnerUseCase(unitOfWork)
     }
 
     @Test

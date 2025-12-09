@@ -12,20 +12,22 @@ import reservations.application.useCases.CreateReservationUseCase
 import reservations.domain.ReservationStatus
 import services.reservations.FakeReservationRepository
 import services.reservations.FakeTicketsClient
+import services.reservations.FakeUnitOfWork
 import services.reservations.TestHelpers
 
 class CreateReservationUseCaseTest {
 
         private lateinit var reservationRepository: FakeReservationRepository
+        private lateinit var unitOfWork: FakeUnitOfWork
         private lateinit var ticketsClient: FakeTicketsClient
         private lateinit var createReservationUseCase: CreateReservationUseCase
 
         @BeforeEach
         fun setUp() {
                 reservationRepository = FakeReservationRepository()
+                unitOfWork = FakeUnitOfWork(reservationRepository)
                 ticketsClient = FakeTicketsClient()
-                createReservationUseCase =
-                        CreateReservationUseCase(reservationRepository, ticketsClient)
+                createReservationUseCase = CreateReservationUseCase(unitOfWork, ticketsClient)
         }
 
         @Test

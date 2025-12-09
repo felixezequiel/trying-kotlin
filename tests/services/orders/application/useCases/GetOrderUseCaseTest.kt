@@ -2,7 +2,8 @@ package orders.application.useCases
 
 import java.math.BigDecimal
 import java.util.UUID
-import orders.application.ports.outbound.IOrderRepository
+import orders.adapters.outbound.InMemoryOrderStore
+import orders.adapters.outbound.UnitOfWorkAdapter
 import orders.domain.Order
 import orders.domain.OrderItem
 import orders.domain.valueObjects.Price
@@ -13,13 +14,20 @@ import org.junit.jupiter.api.Test
 
 class GetOrderUseCaseTest {
 
-    private lateinit var orderRepository: FakeOrderRepository
+    private lateinit var orderStore: InMemoryOrderStore
+    private lateinit var unitOfWork: UnitOfWorkAdapter
     private lateinit var useCase: GetOrderUseCase
 
     @BeforeEach
     fun setup() {
-        orderRepository = FakeOrderRepository()
-        useCase = GetOrderUseCase(orderRepository)
+        orderStore = InMemoryOrderStore()
+        unitOfWork =
+                UnitOfWorkAdapter(
+                        orderStore.orderRepository,
+                        orderStore.issuedTicketRepository,
+                        orderStore.transactionManager
+                )
+        useCase = GetOrderUseCase(unitOfWork)
     }
 
     private fun createOrder(): Order {
@@ -41,7 +49,7 @@ class GetOrderUseCaseTest {
     @Test
     fun `deve retornar order existente`() {
         val order = createOrder()
-        orderRepository.save(order)
+        orderStore.orderRepository.save(order)
 
         val result = useCase.execute(order.id)
 
@@ -53,28 +61,5 @@ class GetOrderUseCaseTest {
     fun `deve retornar null para order inexistente`() {
         val result = useCase.execute(UUID.randomUUID())
         assertNull(result)
-    }
-
-    // Fake implementation
-    private class FakeOrderRepository : IOrderRepository {
-        private val orders = mutableMapOf<UUID, Order>()
-
-        override fun save(order: Order): Order {
-            orders[order.id] = order
-            return order
-        }
-
-        override fun findById(id: UUID): Order? = orders[id]
-
-        override fun findByCustomerId(customerId: UUID): List<Order> =
-                orders.values.filter { it.customerId == customerId }
-
-        override fun findByReservationId(reservationId: UUID): Order? =
-                orders.values.find { it.reservationId == reservationId }
-
-        override fun update(order: Order): Order {
-            orders[order.id] = order
-            return order
-        }
     }
 }

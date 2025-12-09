@@ -2,11 +2,11 @@ package tickets.application.useCases
 
 import java.util.UUID
 import tickets.application.dto.ReleaseTicketsRequest
-import tickets.application.ports.outbound.ITicketTypeRepository
+import tickets.application.ports.outbound.IUnitOfWork
 import tickets.domain.TicketType
 import tickets.domain.valueObjects.Quantity
 
-class ReleaseTicketsUseCase(private val ticketTypeRepository: ITicketTypeRepository) {
+class ReleaseTicketsUseCase(private val unitOfWork: IUnitOfWork) {
 
     suspend fun execute(request: ReleaseTicketsRequest): TicketType {
         val ticketTypeId =
@@ -19,12 +19,12 @@ class ReleaseTicketsUseCase(private val ticketTypeRepository: ITicketTypeReposit
         // Validação encapsulada no Value Object
         val quantity = Quantity.positive(request.quantity)
 
-        ticketTypeRepository.getById(ticketTypeId)
+        unitOfWork.ticketTypeRepository.getById(ticketTypeId)
                 ?: throw IllegalArgumentException("Tipo de ingresso não encontrado")
 
         // Operação atômica de incremento
-        ticketTypeRepository.incrementAvailableQuantity(ticketTypeId, quantity)
+        unitOfWork.ticketTypeRepository.incrementAvailableQuantity(ticketTypeId, quantity)
         // Retornar estado atualizado
-        return ticketTypeRepository.getById(ticketTypeId)!!
+        return unitOfWork.ticketTypeRepository.getById(ticketTypeId)!!
     }
 }

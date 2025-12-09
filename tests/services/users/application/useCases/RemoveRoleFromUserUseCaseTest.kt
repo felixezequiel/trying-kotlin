@@ -2,32 +2,29 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import users.adapters.outbound.UnitOfWorkAdapter
-import users.adapters.outbound.UserRepositoryAdapter
+import services.users.FakeUnitOfWork
+import services.users.FakeUserRepository
 import users.application.useCases.AddRoleToUserUseCase
 import users.application.useCases.RemoveRoleFromUserUseCase
 import users.application.useCases.UserUseCase
 import users.domain.Role
 import users.domain.valueObjects.UserEmail
-import users.infrastructure.persistence.DatabaseContext
 
 class RemoveRoleFromUserUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var unitOfWork: UnitOfWorkAdapter
-    private lateinit var userRepository: UserRepositoryAdapter
+    private lateinit var userRepository: FakeUserRepository
+    private lateinit var unitOfWork: FakeUnitOfWork
     private lateinit var userUseCase: UserUseCase
     private lateinit var addRoleToUserUseCase: AddRoleToUserUseCase
     private lateinit var removeRoleFromUserUseCase: RemoveRoleFromUserUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        unitOfWork = UnitOfWorkAdapter(dbContext)
-        userRepository = UserRepositoryAdapter(dbContext)
+        userRepository = FakeUserRepository()
+        unitOfWork = FakeUnitOfWork(userRepository)
         userUseCase = UserUseCase(unitOfWork)
-        addRoleToUserUseCase = AddRoleToUserUseCase(userRepository)
-        removeRoleFromUserUseCase = RemoveRoleFromUserUseCase(userRepository)
+        addRoleToUserUseCase = AddRoleToUserUseCase(unitOfWork)
+        removeRoleFromUserUseCase = RemoveRoleFromUserUseCase(unitOfWork)
     }
 
     @Test

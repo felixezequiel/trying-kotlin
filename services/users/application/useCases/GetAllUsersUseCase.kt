@@ -5,6 +5,6 @@ import users.domain.User
 
 class GetAllUsersUseCase(private val unitOfWork: IUnitOfWork) {
     suspend fun execute(): List<User> {
-        return unitOfWork.userRepository().getAll()
+        return unitOfWork.userRepository.getAll()
     }
 }

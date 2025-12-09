@@ -3,25 +3,25 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.FakeTicketTypeRepository
+import services.tickets.FakeUnitOfWork
 import services.tickets.TestHelpers
-import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.dto.ReleaseTicketsRequest
 import tickets.application.useCases.ReleaseTicketsUseCase
 import tickets.domain.TicketType
 import tickets.domain.TicketTypeStatus
-import tickets.infrastructure.persistence.DatabaseContext
 
 class ReleaseTicketsUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var ticketTypeRepository: TicketTypeRepositoryAdapter
+    private lateinit var ticketTypeRepository: FakeTicketTypeRepository
+    private lateinit var unitOfWork: FakeUnitOfWork
     private lateinit var releaseTicketsUseCase: ReleaseTicketsUseCase
 
     @BeforeEach
     fun setUp() {
-        dbContext = DatabaseContext()
-        ticketTypeRepository = TicketTypeRepositoryAdapter(dbContext)
-        releaseTicketsUseCase = ReleaseTicketsUseCase(ticketTypeRepository)
+        ticketTypeRepository = FakeTicketTypeRepository()
+        unitOfWork = FakeUnitOfWork(ticketTypeRepository)
+        releaseTicketsUseCase = ReleaseTicketsUseCase(unitOfWork)
     }
 
     private suspend fun createTicketType(

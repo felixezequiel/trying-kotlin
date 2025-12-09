@@ -1,11 +1,11 @@
 package orders.application.useCases
 
-import orders.application.ports.outbound.IIssuedTicketRepository
+import orders.application.ports.outbound.IUnitOfWork
 import orders.domain.IssuedTicket
 
-class GetIssuedTicketUseCase(private val issuedTicketRepository: IIssuedTicketRepository) {
+class GetIssuedTicketUseCase(private val unitOfWork: IUnitOfWork) {
 
     fun execute(code: String): IssuedTicket? {
-        return issuedTicketRepository.findByCode(code)
+        return unitOfWork.issuedTicketRepository.findByCode(code)
     }
 }

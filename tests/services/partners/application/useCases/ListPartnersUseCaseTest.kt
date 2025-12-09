@@ -2,30 +2,31 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import partners.adapters.outbound.PartnerRepositoryAdapter
+import partners.adapters.outbound.InMemoryPartnerStore
+import partners.adapters.outbound.UnitOfWorkAdapter
 import partners.application.dto.CreatePartnerRequest
 import partners.application.useCases.ApprovePartnerUseCase
 import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.ListPartnersUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
-import partners.infrastructure.persistence.DatabaseContext
 
 class ListPartnersUseCaseTest {
 
-        private lateinit var dbContext: DatabaseContext
-        private lateinit var partnerRepository: PartnerRepositoryAdapter
+        private lateinit var partnerStore: InMemoryPartnerStore
+        private lateinit var unitOfWork: UnitOfWorkAdapter
         private lateinit var createPartnerUseCase: CreatePartnerUseCase
         private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
         private lateinit var listPartnersUseCase: ListPartnersUseCase
 
         @BeforeEach
         fun setUp() {
-                dbContext = DatabaseContext()
-                partnerRepository = PartnerRepositoryAdapter(dbContext)
-                createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
-                approvePartnerUseCase = ApprovePartnerUseCase(partnerRepository)
-                listPartnersUseCase = ListPartnersUseCase(partnerRepository)
+                partnerStore = InMemoryPartnerStore()
+                unitOfWork =
+                        UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
+                createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+                approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
+                listPartnersUseCase = ListPartnersUseCase(unitOfWork)
         }
 
         @Test
