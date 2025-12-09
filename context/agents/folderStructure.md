@@ -15,12 +15,12 @@ Cada feature/bounded context deve ter sua própria pasta na raiz do projeto, seg
   ├── domain/                    # Entidades e objetos de valor do domínio
   ├── application/
   │   ├── ports/
-  │   │   ├── in/               # Portas de entrada (interfaces para controllers, handlers)
-  │   │   └── out/               # Portas de saída (interfaces para repositórios, serviços externos)
+  │   │   ├── inbound/           # Portas de entrada (interfaces para controllers, handlers)
+  │   │   └── outbound/          # Portas de saída (interfaces para repositórios, serviços externos)
   │   └── useCases/              # Casos de uso da aplicação
   ├── adapters/
-  │   ├── in/                    # Adapters de entrada (controllers, handlers HTTP, CLI)
-  │   └── out/                   # Adapters de saída (repositórios, clientes de APIs externas)
+  │   ├── inbound/               # Adapters de entrada (controllers, handlers HTTP, CLI)
+  │   └── outbound/              # Adapters de saída (repositórios, clientes de APIs externas)
   ├── infrastructure/
   │   └── persistence/           # Implementações de persistência (banco de dados, cache)
   │   └── external/              # Integrações com serviços externos (se necessário)
@@ -56,10 +56,10 @@ Cada feature/bounded context deve ter sua própria pasta na raiz do projeto, seg
 - **Package**: `<feature>.domain`
 
 ### Interfaces (Ports)
-- **Portas de entrada**: `<feature>/application/ports/in/`
-- **Portas de saída**: `<feature>/application/ports/out/`
+- **Portas de entrada**: `<feature>/application/ports/inbound/`
+- **Portas de saída**: `<feature>/application/ports/outbound/`
 - **Nomenclatura**: `I` + Nome (ex: `IUserRepository.kt`)
-- **Package**: `<feature>.application.ports.in` ou `<feature>.application.ports.out`
+- **Package**: `<feature>.application.ports.inbound` ou `<feature>.application.ports.outbound`
 
 ### Use Cases
 - **Localização**: `<feature>/application/useCases/`
@@ -67,14 +67,14 @@ Cada feature/bounded context deve ter sua própria pasta na raiz do projeto, seg
 - **Package**: `<feature>.application.useCases`
 
 ### Adapters de Entrada
-- **Localização**: `<feature>/adapters/in/`
+- **Localização**: `<feature>/adapters/inbound/`
 - **Nomenclatura**: Nome + `Adapter` ou `Controller` (ex: `UserController.kt`)
-- **Package**: `<feature>.adapters.in`
+- **Package**: `<feature>.adapters.inbound`
 
 ### Adapters de Saída
-- **Localização**: `<feature>/adapters/out/`
+- **Localização**: `<feature>/adapters/outbound/`
 - **Nomenclatura**: Nome + `Adapter` (ex: `UserRepositoryAdapter.kt`)
-- **Package**: `<feature>.adapters.out`
+- **Package**: `<feature>.adapters.outbound`
 
 ### Infraestrutura
 - **Persistência**: `<feature>/infrastructure/persistence/`
@@ -94,9 +94,9 @@ tests/
       │   └── useCases/
       │       └── <Nome>UseCaseTest.kt
       ├── adapters/
-      │   ├── in/
+      │   ├── inbound/
       │   │   └── <Nome>AdapterTest.kt
-      │   └── out/
+      │   └── outbound/
       │       └── <Nome>AdapterTest.kt
       └── infrastructure/
           └── persistence/
@@ -118,18 +118,18 @@ orders/
   │   └── Order.kt
   ├── application/
   │   ├── ports/
-  │   │   ├── in/
+  │   │   ├── inbound/
   │   │   │   └── IOrderHandler.kt
-  │   │   └── out/
+  │   │   └── outbound/
   │   │       ├── IOrderRepository.kt
   │   │       └── IPaymentService.kt
   │   └── useCases/
   │       ├── CreateOrderUseCase.kt
   │       └── CancelOrderUseCase.kt
   ├── adapters/
-  │   ├── in/
+  │   ├── inbound/
   │   │   └── OrderController.kt
-  │   └── out/
+  │   └── outbound/
   │       ├── OrderRepositoryAdapter.kt
   │       └── PaymentServiceAdapter.kt
   ├── infrastructure/
@@ -144,9 +144,9 @@ tests/
       │       ├── CreateOrderUseCaseTest.kt
       │       └── CancelOrderUseCaseTest.kt
       ├── adapters/
-      │   ├── in/
+      │   ├── inbound/
       │   │   └── OrderControllerTest.kt
-      │   └── out/
+      │   └── outbound/
       │       ├── OrderRepositoryAdapterTest.kt
       │       └── PaymentServiceAdapterTest.kt
       └── infrastructure/

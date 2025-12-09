@@ -30,12 +30,12 @@ Este projeto utiliza:
   ├── domain/                    # Entidades de domínio
   ├── application/
   │   ├── ports/
-  │   │   ├── in/               # Portas de entrada
-  │   │   └── out/              # Portas de saída
+  │   │   ├── inbound/           # Portas de entrada
+  │   │   └── outbound/          # Portas de saída
   │   └── useCases/              # Casos de uso
   ├── adapters/
-  │   ├── in/                    # Adapters de entrada
-  │   └── out/                   # Adapters de saída
+  │   ├── inbound/               # Adapters de entrada
+  │   └── outbound/              # Adapters de saída
   ├── infrastructure/
   │   └── persistence/           # Implementações de persistência
   └── index.kt                   # Ponto de entrada (opcional)

@@ -1,0 +1,16 @@
+FROM gradle:8.5-jdk17
+
+WORKDIR /app
+
+# Copia arquivos de configuração do Gradle
+COPY build.gradle.kts settings.gradle.kts ./
+COPY gradle ./gradle
+
+# Copia módulos (serão sobrescritos pelos volumes em dev)
+COPY shared ./shared
+COPY services/users ./services/users
+
+EXPOSE 8081
+
+# Em dev, o comando é sobrescrito pelo docker-compose.dev.yml
+CMD ["gradle", ":services:users:run"]

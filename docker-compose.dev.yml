@@ -1,0 +1,33 @@
+version: '3.8'
+
+# Override para desenvolvimento com hot reload
+# Uso: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  bff:
+    build:
+      context: .
+      dockerfile: bff/Dockerfile.dev
+    volumes:
+      - ./bff:/app/bff
+      - ./shared:/app/shared
+      - gradle-cache:/root/.gradle
+    environment:
+      - BFF_PORT=8080
+      - USERS_SERVICE_URL=http://users-service:8081
+    command: gradle -t :bff:classes --continuous & gradle :bff:run
+
+  users-service:
+    build:
+      context: .
+      dockerfile: services/users/Dockerfile.dev
+    volumes:
+      - ./services/users:/app/services/users
+      - ./shared:/app/shared
+      - gradle-cache:/root/.gradle
+    environment:
+      - USERS_SERVICE_PORT=8081
+    command: gradle -t :services:users:classes --continuous & gradle :services:users:run
+
+volumes:
+  gradle-cache:
