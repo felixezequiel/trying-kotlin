@@ -4,27 +4,63 @@ Este documento define o padrão de organização de pastas e arquivos que DEVE s
 
 ## Arquitetura
 
-O projeto segue os padrões **Vertical Slice Architecture** e **Hexagonal Architecture (Ports and Adapters)**.
+O projeto segue os padrões **Vertical Slice Architecture** e **Hexagonal Architecture (Ports and Adapters)** com arquitetura de **microserviços**.
 
-## Estrutura Base por Feature (Vertical Slice)
-
-Cada feature/bounded context deve ter sua própria pasta na raiz do projeto, seguindo a estrutura abaixo:
+## Estrutura Raiz do Projeto
 
 ```
-<feature-name>/
+projeto/
+  ├── bff/                       # Backend for Frontend (GraphQL gateway)
+  ├── services/                  # Microserviços (cada feature é um serviço)
+  │   └── <feature-name>/
+  ├── shared/                    # Código compartilhado entre serviços
+  ├── tests/                     # Testes (espelha estrutura de services/)
+  ├── context/                   # Documentação e ADRs
+  └── docker-compose.yml         # Orquestração dos serviços
+```
+
+## Estrutura de Microserviço (Vertical Slice + Hexagonal)
+
+Cada microserviço em `services/<feature>/` segue a estrutura:
+
+```
+services/<feature-name>/
   ├── domain/                    # Entidades e objetos de valor do domínio
   ├── application/
+  │   ├── dto/                   # Data Transfer Objects
   │   ├── ports/
-  │   │   ├── inbound/           # Portas de entrada (interfaces para controllers, handlers)
   │   │   └── outbound/          # Portas de saída (interfaces para repositórios, serviços externos)
   │   └── useCases/              # Casos de uso da aplicação
   ├── adapters/
-  │   ├── inbound/               # Adapters de entrada (controllers, handlers HTTP, CLI)
-  │   └── outbound/              # Adapters de saída (repositórios, clientes de APIs externas)
+  │   ├── inbound/               # Adapters de entrada (controllers HTTP)
+  │   └── outbound/              # Adapters de saída (repositórios, clientes externos)
   ├── infrastructure/
-  │   └── persistence/           # Implementações de persistência (banco de dados, cache)
-  │   └── external/              # Integrações com serviços externos (se necessário)
-  └── index.kt                   # Ponto de entrada da feature (opcional)
+  │   ├── persistence/           # Implementações de persistência (banco de dados)
+  │   └── web/                   # Configuração do servidor web (Ktor)
+  ├── build.gradle.kts           # Dependências do serviço
+  └── Dockerfile                 # Container do serviço
+```
+
+## Estrutura do BFF (Backend for Frontend)
+
+```
+bff/
+  ├── clients/                   # Clientes HTTP para comunicação com microserviços
+  ├── graphql/                   # Schema e resolvers GraphQL
+  ├── routes/                    # Rotas HTTP (REST endpoints)
+  ├── Application.kt             # Ponto de entrada
+  ├── build.gradle.kts
+  └── Dockerfile
+```
+
+## Estrutura Shared (Código Compartilhado)
+
+```
+shared/
+  ├── dto/                       # DTOs compartilhados (PaginatedResponse, ServiceResponse)
+  ├── exceptions/                # Exceções compartilhadas
+  ├── utils/                     # Utilitários (EnvConfig, etc)
+  └── build.gradle.kts
 ```
 
 ## Regras de Nomenclatura
@@ -51,124 +87,137 @@ Cada feature/bounded context deve ter sua própria pasta na raiz do projeto, seg
 ## Onde Colocar Cada Tipo de Arquivo
 
 ### Entidades de Domínio
-- **Localização**: `<feature>/domain/`
-- **Exemplo**: `users/domain/User.kt`
+- **Localização**: `services/<feature>/domain/`
+- **Exemplo**: `services/users/domain/User.kt`
 - **Package**: `<feature>.domain`
 
+### DTOs (Data Transfer Objects)
+- **Localização**: `services/<feature>/application/dto/`
+- **Exemplo**: `services/users/application/dto/CreateUserRequest.kt`
+- **Package**: `<feature>.application.dto`
+
 ### Interfaces (Ports)
-- **Portas de entrada**: `<feature>/application/ports/inbound/`
-- **Portas de saída**: `<feature>/application/ports/outbound/`
+- **Portas de saída**: `services/<feature>/application/ports/outbound/`
 - **Nomenclatura**: `I` + Nome (ex: `IUserRepository.kt`)
-- **Package**: `<feature>.application.ports.inbound` ou `<feature>.application.ports.outbound`
+- **Package**: `<feature>.application.ports.outbound`
 
 ### Use Cases
-- **Localização**: `<feature>/application/useCases/`
+- **Localização**: `services/<feature>/application/useCases/`
 - **Nomenclatura**: Nome + `UseCase` (ex: `UserUseCase.kt`)
 - **Package**: `<feature>.application.useCases`
 
 ### Adapters de Entrada
-- **Localização**: `<feature>/adapters/inbound/`
-- **Nomenclatura**: Nome + `Adapter` ou `Controller` (ex: `UserController.kt`)
+- **Localização**: `services/<feature>/adapters/inbound/`
+- **Nomenclatura**: Nome + `Controller` (ex: `UserController.kt`)
 - **Package**: `<feature>.adapters.inbound`
 
 ### Adapters de Saída
-- **Localização**: `<feature>/adapters/outbound/`
+- **Localização**: `services/<feature>/adapters/outbound/`
 - **Nomenclatura**: Nome + `Adapter` (ex: `UserRepositoryAdapter.kt`)
 - **Package**: `<feature>.adapters.outbound`
 
 ### Infraestrutura
-- **Persistência**: `<feature>/infrastructure/persistence/`
-- **Serviços externos**: `<feature>/infrastructure/external/`
-- **Package**: `<feature>.infrastructure.persistence` ou `<feature>.infrastructure.external`
+- **Persistência**: `services/<feature>/infrastructure/persistence/`
+- **Web (Ktor)**: `services/<feature>/infrastructure/web/`
+- **Package**: `<feature>.infrastructure.persistence` ou `<feature>.infrastructure.web`
 
 ## Estrutura de Testes
 
-Os testes DEVEM espelhar exatamente a estrutura do código fonte:
+Os testes DEVEM espelhar exatamente a estrutura do código fonte em `services/`:
 
 ```
 tests/
-  └── <feature-name>/
-      ├── domain/                    # Testes de entidades (se necessário)
-      ├── application/
-      │   ├── ports/                 # Testes de contratos/interfaces (se necessário)
-      │   └── useCases/
-      │       └── <Nome>UseCaseTest.kt
-      ├── adapters/
-      │   ├── inbound/
-      │   │   └── <Nome>AdapterTest.kt
-      │   └── outbound/
-      │       └── <Nome>AdapterTest.kt
-      └── infrastructure/
-          └── persistence/
-              └── <Nome>Test.kt
+  └── services/
+      └── <feature-name>/
+          ├── domain/                    # Testes de entidades (se necessário)
+          ├── application/
+          │   └── useCases/
+          │       └── <Nome>UseCaseTest.kt
+          ├── adapters/
+          │   ├── inbound/
+          │   │   └── <Nome>ControllerTest.kt
+          │   └── outbound/
+          │       └── <Nome>AdapterTest.kt
+          └── infrastructure/
+              └── persistence/
+                  └── <Nome>Test.kt
 ```
 
 ### Regras de Testes
 - **Nomenclatura**: Nome da classe + `Test` (ex: `UserUseCaseTest.kt`)
 - **Package**: Mesmo package do código testado
-- **Localização**: Espelhar exatamente a estrutura de pastas do código fonte
+- **Localização**: `tests/services/<feature>/` espelhando `services/<feature>/`
 
 ## Exemplo Completo
 
-Para uma feature `orders`:
+Para um novo microserviço `orders`:
 
 ```
-orders/
-  ├── domain/
-  │   └── Order.kt
-  ├── application/
-  │   ├── ports/
-  │   │   ├── inbound/
-  │   │   │   └── IOrderHandler.kt
-  │   │   └── outbound/
-  │   │       ├── IOrderRepository.kt
-  │   │       └── IPaymentService.kt
-  │   └── useCases/
-  │       ├── CreateOrderUseCase.kt
-  │       └── CancelOrderUseCase.kt
-  ├── adapters/
-  │   ├── inbound/
-  │   │   └── OrderController.kt
-  │   └── outbound/
-  │       ├── OrderRepositoryAdapter.kt
-  │       └── PaymentServiceAdapter.kt
-  ├── infrastructure/
-  │   └── persistence/
-  │       └── OrderDatabaseContext.kt
-  └── index.kt
-
-tests/
+services/
   └── orders/
+      ├── domain/
+      │   └── Order.kt
       ├── application/
+      │   ├── dto/
+      │   │   ├── CreateOrderRequest.kt
+      │   │   └── OrderResponse.kt
+      │   ├── ports/
+      │   │   └── outbound/
+      │   │       ├── IOrderRepository.kt
+      │   │       └── IPaymentService.kt
       │   └── useCases/
-      │       ├── CreateOrderUseCaseTest.kt
-      │       └── CancelOrderUseCaseTest.kt
+      │       ├── CreateOrderUseCase.kt
+      │       └── CancelOrderUseCase.kt
       ├── adapters/
       │   ├── inbound/
-      │   │   └── OrderControllerTest.kt
+      │   │   └── OrderController.kt
       │   └── outbound/
-      │       ├── OrderRepositoryAdapterTest.kt
-      │       └── PaymentServiceAdapterTest.kt
-      └── infrastructure/
-          └── persistence/
-              └── OrderDatabaseContextTest.kt
+      │       ├── OrderRepositoryAdapter.kt
+      │       └── PaymentServiceAdapter.kt
+      ├── infrastructure/
+      │   ├── persistence/
+      │   │   └── OrderDatabaseContext.kt
+      │   └── web/
+      │       └── Main.kt
+      ├── build.gradle.kts
+      └── Dockerfile
+
+tests/
+  └── services/
+      └── orders/
+          ├── application/
+          │   └── useCases/
+          │       ├── CreateOrderUseCaseTest.kt
+          │       └── CancelOrderUseCaseTest.kt
+          ├── adapters/
+          │   ├── inbound/
+          │   │   └── OrderControllerTest.kt
+          │   └── outbound/
+          │       ├── OrderRepositoryAdapterTest.kt
+          │       └── PaymentServiceAdapterTest.kt
+          └── infrastructure/
+              └── persistence/
+                  └── OrderDatabaseContextTest.kt
 ```
 
 ## Checklist ao Criar Arquivos
 
 Antes de criar qualquer arquivo, verifique:
 
-- [ ] A pasta da feature existe na raiz?
+- [ ] O microserviço existe em `services/<feature>/`?
 - [ ] O arquivo está na pasta correta conforme seu tipo?
 - [ ] O nome segue o padrão de nomenclatura?
 - [ ] O package corresponde à estrutura de pastas?
-- [ ] Se for uma classe testável, o teste foi criado na estrutura espelhada em `tests/`?
+- [ ] Se for uma classe testável, o teste foi criado em `tests/services/<feature>/`?
 - [ ] O teste segue a nomenclatura `NomeClasseTest.kt`?
 
 ## Princípios Importantes
 
-1. **Separação de Responsabilidades**: Cada camada tem uma responsabilidade clara
-2. **Dependências**: Domain não depende de nada. Application depende apenas de Domain e Ports. Adapters implementam Ports.
-3. **Testabilidade**: Tudo deve ser testável através de interfaces (Ports)
-4. **Espelhamento**: Testes sempre espelham a estrutura do código fonte
+1. **Microserviços Independentes**: Cada serviço em `services/` é deployável separadamente
+2. **BFF como Gateway**: O BFF orquestra chamadas aos microserviços
+3. **Shared para Reutilização**: Código comum vai em `shared/`
+4. **Separação de Responsabilidades**: Cada camada tem uma responsabilidade clara
+5. **Dependências**: Domain não depende de nada. Application depende apenas de Domain e Ports. Adapters implementam Ports.
+6. **Testabilidade**: Tudo deve ser testável através de interfaces (Ports)
+7. **Espelhamento**: Testes em `tests/services/` espelham `services/`
 
