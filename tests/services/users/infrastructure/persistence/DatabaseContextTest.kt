@@ -2,7 +2,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import users.domain.User
+import services.users.TestHelpers
 import users.infrastructure.persistence.DatabaseContext
 
 class DatabaseContextTest {
@@ -16,21 +16,21 @@ class DatabaseContextTest {
 
     @Test
     fun `deve adicionar usuário com sucesso`() = runTest {
-        val user = User(name = "Alice", email = "alice@example.com")
+        val user = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
         val userId = dbContext.addUser(user)
 
         assertEquals(1L, userId)
         val foundUser = dbContext.findUserByEmail("alice@example.com")
         assertNotNull(foundUser)
-        assertEquals("Alice", foundUser?.name)
-        assertEquals("alice@example.com", foundUser?.email)
+        assertEquals("Alice", foundUser?.name?.value)
+        assertEquals("alice@example.com", foundUser?.email?.value)
         assertEquals(1L, foundUser?.id)
     }
 
     @Test
     fun `deve lançar exceção ao tentar adicionar usuário com email duplicado`() = runTest {
-        val user1 = User(name = "Alice", email = "alice@example.com")
-        val user2 = User(name = "Bob", email = "alice@example.com")
+        val user1 = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
+        val user2 = TestHelpers.createTestUser(name = "Bob", email = "alice@example.com")
 
         dbContext.addUser(user1)
 
@@ -50,9 +50,9 @@ class DatabaseContextTest {
 
     @Test
     fun `deve atribuir IDs sequenciais aos usuários`() = runTest {
-        val user1 = User(name = "Alice", email = "alice@example.com")
-        val user2 = User(name = "Bob", email = "bob@example.com")
-        val user3 = User(name = "Charlie", email = "charlie@example.com")
+        val user1 = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
+        val user2 = TestHelpers.createTestUser(name = "Bob", email = "bob@example.com")
+        val user3 = TestHelpers.createTestUser(name = "Charlie", email = "charlie@example.com")
 
         val id1 = dbContext.addUser(user1)
         val id2 = dbContext.addUser(user2)
@@ -74,10 +74,11 @@ class DatabaseContextTest {
     @Test
     fun `deve executar transação com sucesso`() = runTest {
         var executed = false
-        val result = dbContext.executeTransaction {
-            executed = true
-            "success"
-        }
+        val result =
+                dbContext.executeTransaction {
+                    executed = true
+                    "success"
+                }
 
         assertTrue(executed)
         assertEquals("success", result)
@@ -85,8 +86,8 @@ class DatabaseContextTest {
 
     @Test
     fun `deve fazer rollback quando transação falha`() = runTest {
-        val user = User(name = "Alice", email = "alice@example.com")
-        
+        val user = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
+
         try {
             dbContext.executeTransaction {
                 dbContext.addUser(user)
@@ -101,4 +102,3 @@ class DatabaseContextTest {
         assertNull(foundUser)
     }
 }
-

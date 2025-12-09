@@ -1,9 +1,9 @@
-import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.useCases.ListTicketTypesByEventUseCase
 import tickets.domain.TicketType
@@ -29,18 +29,7 @@ class ListTicketTypesByEventUseCaseTest {
             status: TicketTypeStatus = TicketTypeStatus.ACTIVE
     ): TicketType {
         val ticketType =
-                TicketType(
-                        eventId = eventId,
-                        name = name,
-                        description = "Descrição",
-                        price = BigDecimal("100.00"),
-                        totalQuantity = 100,
-                        availableQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null,
-                        status = status
-                )
+                TestHelpers.createTestTicketType(eventId = eventId, name = name, status = status)
         ticketTypeRepository.add(ticketType)
         return ticketType
     }
@@ -62,9 +51,9 @@ class ListTicketTypesByEventUseCaseTest {
 
         // Assert
         assertEquals(3, result.size)
-        assertTrue(result.any { it.name == "VIP" })
-        assertTrue(result.any { it.name == "Pista" })
-        assertTrue(result.any { it.name == "Camarote" })
+        assertTrue(result.any { it.name.value == "VIP" })
+        assertTrue(result.any { it.name.value == "Pista" })
+        assertTrue(result.any { it.name.value == "Camarote" })
     }
 
     @Test
@@ -92,6 +81,6 @@ class ListTicketTypesByEventUseCaseTest {
 
         // Assert
         assertEquals(1, result.size)
-        assertEquals("VIP", result[0].name)
+        assertEquals("VIP", result[0].name.value)
     }
 }

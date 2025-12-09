@@ -7,6 +7,7 @@ import users.adapters.outbound.UserRepositoryAdapter
 import users.application.useCases.AddRoleToUserUseCase
 import users.application.useCases.UserUseCase
 import users.domain.Role
+import users.domain.valueObjects.UserEmail
 import users.infrastructure.persistence.DatabaseContext
 
 class AddRoleToUserUseCaseTest {
@@ -30,7 +31,7 @@ class AddRoleToUserUseCaseTest {
     fun `deve adicionar role PARTNER a um usuário`() = runTest {
         // Arrange
         userUseCase.registerUser("Alice", "alice@example.com")
-        val user = userRepository.getUserByEmail("alice@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNotNull(user)
         assertEquals(setOf(Role.CUSTOMER), user?.roles)
 
@@ -48,7 +49,7 @@ class AddRoleToUserUseCaseTest {
     fun `deve adicionar role ADMIN a um usuário`() = runTest {
         // Arrange
         userUseCase.registerUser("Admin", "admin@example.com")
-        val user = userRepository.getUserByEmail("admin@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("admin@example.com"))
         assertNotNull(user)
 
         // Act
@@ -64,7 +65,7 @@ class AddRoleToUserUseCaseTest {
     fun `deve retornar true quando usuário já possui o role`() = runTest {
         // Arrange
         userUseCase.registerUser("Alice", "alice@example.com")
-        val user = userRepository.getUserByEmail("alice@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNotNull(user)
 
         // Act - tentar adicionar CUSTOMER que já existe
@@ -91,7 +92,7 @@ class AddRoleToUserUseCaseTest {
     fun `deve permitir usuário ter múltiplos roles`() = runTest {
         // Arrange
         userUseCase.registerUser("SuperUser", "super@example.com")
-        val user = userRepository.getUserByEmail("super@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("super@example.com"))
         assertNotNull(user)
 
         // Act

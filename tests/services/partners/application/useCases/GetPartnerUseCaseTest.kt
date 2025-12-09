@@ -32,7 +32,7 @@ class GetPartnerUseCaseTest {
                 CreatePartnerRequest(
                         companyName = "Empresa Teste",
                         tradeName = "Teste LTDA",
-                        document = "12345678901234",
+                        document = "11222333000181",
                         documentType = DocumentType.CNPJ,
                         email = "contato@empresa.com",
                         phone = "11999999999"
@@ -44,7 +44,7 @@ class GetPartnerUseCaseTest {
 
         // Assert
         assertNotNull(partner)
-        assertEquals("Empresa Teste", partner?.companyName)
+        assertEquals("Empresa Teste", partner?.companyName?.value)
         assertEquals(partnerId, partner?.id)
     }
 
@@ -64,7 +64,7 @@ class GetPartnerUseCaseTest {
                 CreatePartnerRequest(
                         companyName = "Empresa do User 5",
                         tradeName = null,
-                        document = "12345678901234",
+                        document = "11222333000181",
                         documentType = DocumentType.CNPJ,
                         email = "contato@empresa.com",
                         phone = "11999999999"
@@ -76,7 +76,7 @@ class GetPartnerUseCaseTest {
 
         // Assert
         assertNotNull(partner)
-        assertEquals("Empresa do User 5", partner?.companyName)
+        assertEquals("Empresa do User 5", partner?.companyName?.value)
         assertEquals(5L, partner?.userId)
     }
 

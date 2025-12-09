@@ -1,14 +1,13 @@
 import events.domain.Event
 import events.domain.EventStatus
-import events.domain.Venue
+import events.domain.valueObjects.EventName
 import events.infrastructure.persistence.DatabaseContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.events.TestHelpers
 
 class DatabaseContextTest {
 
@@ -23,23 +22,7 @@ class DatabaseContextTest {
             partnerId: UUID = UUID.randomUUID(),
             status: EventStatus = EventStatus.DRAFT
     ): Event {
-        return Event(
-                partnerId = partnerId,
-                name = "Evento Teste",
-                description = "Descrição do evento",
-                venue =
-                        Venue(
-                                name = "Local Teste",
-                                address = "Rua Teste, 1",
-                                city = "São Paulo",
-                                state = "SP",
-                                zipCode = "01000-000",
-                                capacity = 1000
-                        ),
-                startDate = Instant.now().plus(7, ChronoUnit.DAYS),
-                endDate = Instant.now().plus(8, ChronoUnit.DAYS),
-                status = status
-        )
+        return TestHelpers.createTestEvent(partnerId = partnerId, status = status)
     }
 
     @Test
@@ -67,7 +50,7 @@ class DatabaseContextTest {
 
         // Assert
         assertNotNull(foundEvent)
-        assertEquals(event.name, foundEvent?.name)
+        assertEquals(event.name.value, foundEvent?.name?.value)
     }
 
     @Test
@@ -117,7 +100,7 @@ class DatabaseContextTest {
         // Arrange
         val event = createTestEvent()
         val eventId = dbContext.addEvent(event)
-        val updatedEvent = event.copy(name = "Nome Atualizado")
+        val updatedEvent = event.copy(name = EventName.of("Nome Atualizado"))
 
         // Act
         val result = dbContext.updateEvent(updatedEvent)
@@ -125,7 +108,7 @@ class DatabaseContextTest {
         // Assert
         assertTrue(result)
         val foundEvent = dbContext.findById(eventId)
-        assertEquals("Nome Atualizado", foundEvent?.name)
+        assertEquals("Nome Atualizado", foundEvent?.name?.value)
     }
 
     @Test

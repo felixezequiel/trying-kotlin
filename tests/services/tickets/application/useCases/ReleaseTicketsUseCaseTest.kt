@@ -1,9 +1,9 @@
-import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.dto.ReleaseTicketsRequest
 import tickets.application.useCases.ReleaseTicketsUseCase
@@ -30,16 +30,9 @@ class ReleaseTicketsUseCaseTest {
             status: TicketTypeStatus = TicketTypeStatus.ACTIVE
     ): TicketType {
         val ticketType =
-                TicketType(
-                        eventId = UUID.randomUUID(),
-                        name = "VIP",
-                        description = "Ingresso VIP",
-                        price = BigDecimal("100.00"),
+                TestHelpers.createTestTicketType(
                         totalQuantity = totalQuantity,
                         availableQuantity = availableQuantity,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null,
                         status = status
                 )
         ticketTypeRepository.add(ticketType)
@@ -56,7 +49,7 @@ class ReleaseTicketsUseCaseTest {
         val result = releaseTicketsUseCase.execute(request)
 
         // Assert
-        assertEquals(55, result.availableQuantity)
+        assertEquals(55, result.availableQuantity.value)
     }
 
     @Test
@@ -74,7 +67,7 @@ class ReleaseTicketsUseCaseTest {
         val result = releaseTicketsUseCase.execute(request)
 
         // Assert
-        assertEquals(5, result.availableQuantity)
+        assertEquals(5, result.availableQuantity.value)
         assertEquals(TicketTypeStatus.ACTIVE, result.status)
     }
 
@@ -88,7 +81,7 @@ class ReleaseTicketsUseCaseTest {
         val result = releaseTicketsUseCase.execute(request)
 
         // Assert
-        assertEquals(100, result.availableQuantity) // Limitado ao totalQuantity
+        assertEquals(100, result.availableQuantity.value) // Limitado ao totalQuantity
     }
 
     @Test

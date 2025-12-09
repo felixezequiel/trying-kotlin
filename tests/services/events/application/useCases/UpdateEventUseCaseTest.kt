@@ -4,15 +4,13 @@ import events.application.dto.VenueRequest
 import events.application.useCases.UpdateEventUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.domain.Venue
 import events.infrastructure.persistence.DatabaseContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.events.TestHelpers
 
 class UpdateEventUseCaseTest {
 
@@ -31,21 +29,11 @@ class UpdateEventUseCaseTest {
             partnerId: UUID = UUID.randomUUID(),
             status: EventStatus = EventStatus.DRAFT
     ): Event {
-        return Event(
+        return TestHelpers.createTestEvent(
                 partnerId = partnerId,
                 name = "Evento Original",
                 description = "Descrição original",
-                venue =
-                        Venue(
-                                name = "Local Original",
-                                address = "Rua Original, 1",
-                                city = "São Paulo",
-                                state = "SP",
-                                zipCode = "01000-000",
-                                capacity = 1000
-                        ),
-                startDate = Instant.now().plus(7, ChronoUnit.DAYS),
-                endDate = Instant.now().plus(8, ChronoUnit.DAYS),
+                venueName = "Local Original",
                 status = status
         )
     }
@@ -63,8 +51,8 @@ class UpdateEventUseCaseTest {
         val updatedEvent = updateEventUseCase.execute(eventId, partnerId, request)
 
         // Assert
-        assertEquals("Novo Nome do Evento", updatedEvent.name)
-        assertEquals("Descrição original", updatedEvent.description)
+        assertEquals("Novo Nome do Evento", updatedEvent.name.value)
+        assertEquals("Descrição original", updatedEvent.description.value)
     }
 
     @Test

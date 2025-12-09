@@ -1,9 +1,9 @@
-import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.useCases.DeactivateTicketTypeUseCase
 import tickets.domain.TicketType
@@ -26,19 +26,7 @@ class DeactivateTicketTypeUseCaseTest {
     private suspend fun createTicketType(
             status: TicketTypeStatus = TicketTypeStatus.ACTIVE
     ): TicketType {
-        val ticketType =
-                TicketType(
-                        eventId = UUID.randomUUID(),
-                        name = "VIP",
-                        description = "Ingresso VIP",
-                        price = BigDecimal("100.00"),
-                        totalQuantity = 100,
-                        availableQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null,
-                        status = status
-                )
+        val ticketType = TestHelpers.createTestTicketType(status = status)
         ticketTypeRepository.add(ticketType)
         return ticketType
     }

@@ -7,6 +7,7 @@ import users.adapters.outbound.UserRepositoryAdapter
 import users.application.useCases.GetUserByIdUseCase
 import users.application.useCases.UserUseCase
 import users.domain.Role
+import users.domain.valueObjects.UserEmail
 import users.infrastructure.persistence.DatabaseContext
 
 class GetUserByIdUseCaseTest {
@@ -30,7 +31,7 @@ class GetUserByIdUseCaseTest {
     fun `deve retornar usuário quando existe`() = runTest {
         // Arrange
         userUseCase.registerUser("Alice", "alice@example.com")
-        val user = userRepository.getUserByEmail("alice@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNotNull(user)
 
         // Act
@@ -38,8 +39,8 @@ class GetUserByIdUseCaseTest {
 
         // Assert
         assertNotNull(foundUser)
-        assertEquals("Alice", foundUser?.name)
-        assertEquals("alice@example.com", foundUser?.email)
+        assertEquals("Alice", foundUser?.name?.value)
+        assertEquals("alice@example.com", foundUser?.email?.value)
         assertEquals(setOf(Role.CUSTOMER), foundUser?.roles)
     }
 
@@ -56,7 +57,7 @@ class GetUserByIdUseCaseTest {
     fun `deve retornar usuário com múltiplos roles`() = runTest {
         // Arrange
         userUseCase.registerUser("SuperUser", "super@example.com")
-        val user = userRepository.getUserByEmail("super@example.com")
+        val user = userRepository.getUserByEmail(UserEmail.of("super@example.com"))
         assertNotNull(user)
         userRepository.addRole(user!!.id, Role.PARTNER)
         userRepository.addRole(user.id, Role.ADMIN)

@@ -1,12 +1,11 @@
-import java.math.BigDecimal
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.useCases.GetTicketTypeUseCase
-import tickets.domain.TicketType
 import tickets.infrastructure.persistence.DatabaseContext
 
 class GetTicketTypeUseCaseTest {
@@ -26,17 +25,7 @@ class GetTicketTypeUseCaseTest {
     fun `deve retornar tipo de ingresso existente`() = runTest {
         // Arrange
         val ticketType =
-                TicketType(
-                        eventId = UUID.randomUUID(),
-                        name = "VIP",
-                        description = "Ingresso VIP",
-                        price = BigDecimal("100.00"),
-                        totalQuantity = 100,
-                        availableQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+                TestHelpers.createTestTicketType(name = "VIP", description = "Ingresso VIP")
         ticketTypeRepository.add(ticketType)
 
         // Act
@@ -45,7 +34,7 @@ class GetTicketTypeUseCaseTest {
         // Assert
         assertNotNull(result)
         assertEquals(ticketType.id, result?.id)
-        assertEquals("VIP", result?.name)
+        assertEquals("VIP", result?.name?.value)
     }
 
     @Test

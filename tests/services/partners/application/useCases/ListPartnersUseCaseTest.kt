@@ -13,103 +13,103 @@ import partners.infrastructure.persistence.DatabaseContext
 
 class ListPartnersUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var partnerRepository: PartnerRepositoryAdapter
-    private lateinit var createPartnerUseCase: CreatePartnerUseCase
-    private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
-    private lateinit var listPartnersUseCase: ListPartnersUseCase
+        private lateinit var dbContext: DatabaseContext
+        private lateinit var partnerRepository: PartnerRepositoryAdapter
+        private lateinit var createPartnerUseCase: CreatePartnerUseCase
+        private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
+        private lateinit var listPartnersUseCase: ListPartnersUseCase
 
-    @BeforeEach
-    fun setUp() {
-        dbContext = DatabaseContext()
-        partnerRepository = PartnerRepositoryAdapter(dbContext)
-        createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
-        approvePartnerUseCase = ApprovePartnerUseCase(partnerRepository)
-        listPartnersUseCase = ListPartnersUseCase(partnerRepository)
-    }
+        @BeforeEach
+        fun setUp() {
+                dbContext = DatabaseContext()
+                partnerRepository = PartnerRepositoryAdapter(dbContext)
+                createPartnerUseCase = CreatePartnerUseCase(partnerRepository)
+                approvePartnerUseCase = ApprovePartnerUseCase(partnerRepository)
+                listPartnersUseCase = ListPartnersUseCase(partnerRepository)
+        }
 
-    @Test
-    fun `deve listar todos os parceiros`() = runTest {
-        // Arrange
-        createPartnerUseCase.execute(
-                userId = 1L,
-                request =
-                        CreatePartnerRequest(
-                                companyName = "Empresa 1",
-                                tradeName = null,
-                                document = "11111111111111",
-                                documentType = DocumentType.CNPJ,
-                                email = "empresa1@email.com",
-                                phone = "11999999999"
-                        )
-        )
-        createPartnerUseCase.execute(
-                userId = 2L,
-                request =
-                        CreatePartnerRequest(
-                                companyName = "Empresa 2",
-                                tradeName = null,
-                                document = "22222222222222",
-                                documentType = DocumentType.CNPJ,
-                                email = "empresa2@email.com",
-                                phone = "11888888888"
-                        )
-        )
-
-        // Act
-        val partners = listPartnersUseCase.execute()
-
-        // Assert
-        assertEquals(2, partners.size)
-    }
-
-    @Test
-    fun `deve listar parceiros por status`() = runTest {
-        // Arrange
-        val partnerId1 =
+        @Test
+        fun `deve listar todos os parceiros`() = runTest {
+                // Arrange
                 createPartnerUseCase.execute(
                         userId = 1L,
                         request =
                                 CreatePartnerRequest(
                                         companyName = "Empresa 1",
                                         tradeName = null,
-                                        document = "11111111111111",
+                                        document = "11222333000181",
                                         documentType = DocumentType.CNPJ,
                                         email = "empresa1@email.com",
                                         phone = "11999999999"
                                 )
                 )
-        createPartnerUseCase.execute(
-                userId = 2L,
-                request =
-                        CreatePartnerRequest(
-                                companyName = "Empresa 2",
-                                tradeName = null,
-                                document = "22222222222222",
-                                documentType = DocumentType.CNPJ,
-                                email = "empresa2@email.com",
-                                phone = "11888888888"
+                createPartnerUseCase.execute(
+                        userId = 2L,
+                        request =
+                                CreatePartnerRequest(
+                                        companyName = "Empresa 2",
+                                        tradeName = null,
+                                        document = "61695227000193",
+                                        documentType = DocumentType.CNPJ,
+                                        email = "empresa2@email.com",
+                                        phone = "11888888888"
+                                )
+                )
+
+                // Act
+                val partners = listPartnersUseCase.execute()
+
+                // Assert
+                assertEquals(2, partners.size)
+        }
+
+        @Test
+        fun `deve listar parceiros por status`() = runTest {
+                // Arrange
+                val partnerId1 =
+                        createPartnerUseCase.execute(
+                                userId = 1L,
+                                request =
+                                        CreatePartnerRequest(
+                                                companyName = "Empresa 1",
+                                                tradeName = null,
+                                                document = "11222333000181",
+                                                documentType = DocumentType.CNPJ,
+                                                email = "empresa1@email.com",
+                                                phone = "11999999999"
+                                        )
                         )
-        )
-        approvePartnerUseCase.execute(partnerId1) // Aprova apenas o primeiro
+                createPartnerUseCase.execute(
+                        userId = 2L,
+                        request =
+                                CreatePartnerRequest(
+                                        companyName = "Empresa 2",
+                                        tradeName = null,
+                                        document = "61695227000193",
+                                        documentType = DocumentType.CNPJ,
+                                        email = "empresa2@email.com",
+                                        phone = "11888888888"
+                                )
+                )
+                approvePartnerUseCase.execute(partnerId1) // Aprova apenas o primeiro
 
-        // Act
-        val pendingPartners = listPartnersUseCase.executeByStatus(PartnerStatus.PENDING)
-        val approvedPartners = listPartnersUseCase.executeByStatus(PartnerStatus.APPROVED)
+                // Act
+                val pendingPartners = listPartnersUseCase.executeByStatus(PartnerStatus.PENDING)
+                val approvedPartners = listPartnersUseCase.executeByStatus(PartnerStatus.APPROVED)
 
-        // Assert
-        assertEquals(1, pendingPartners.size)
-        assertEquals("Empresa 2", pendingPartners[0].companyName)
-        assertEquals(1, approvedPartners.size)
-        assertEquals("Empresa 1", approvedPartners[0].companyName)
-    }
+                // Assert
+                assertEquals(1, pendingPartners.size)
+                assertEquals("Empresa 2", pendingPartners[0].companyName.value)
+                assertEquals(1, approvedPartners.size)
+                assertEquals("Empresa 1", approvedPartners[0].companyName.value)
+        }
 
-    @Test
-    fun `deve retornar lista vazia quando não há parceiros`() = runTest {
-        // Act
-        val partners = listPartnersUseCase.execute()
+        @Test
+        fun `deve retornar lista vazia quando não há parceiros`() = runTest {
+                // Act
+                val partners = listPartnersUseCase.execute()
 
-        // Assert
-        assertTrue(partners.isEmpty())
-    }
+                // Assert
+                assertTrue(partners.isEmpty())
+        }
 }

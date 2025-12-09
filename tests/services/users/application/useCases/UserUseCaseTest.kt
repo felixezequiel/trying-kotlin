@@ -3,8 +3,9 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import users.adapters.outbound.UnitOfWorkAdapter
-import users.infrastructure.persistence.DatabaseContext
 import users.application.useCases.UserUseCase
+import users.domain.valueObjects.UserEmail
+import users.infrastructure.persistence.DatabaseContext
 
 class UserUseCaseTest {
 
@@ -24,10 +25,10 @@ class UserUseCaseTest {
         userUseCase.registerUser("Alice", "alice@example.com")
 
         val userRepository = unitOfWork.userRepository()
-        val foundUser = userRepository.getUserByEmail("alice@example.com")
+        val foundUser = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNotNull(foundUser)
-        assertEquals("Alice", foundUser?.name)
-        assertEquals("alice@example.com", foundUser?.email)
+        assertEquals("Alice", foundUser?.name?.value)
+        assertEquals("alice@example.com", foundUser?.email?.value)
     }
 
     @Test
@@ -36,7 +37,7 @@ class UserUseCaseTest {
             userUseCase.registerUser("", "alice@example.com")
             fail("Deveria ter lançado IllegalArgumentException")
         } catch (e: IllegalArgumentException) {
-            assertEquals("Nome e e-mail não podem estar vazios.", e.message)
+            assertEquals("Nome não pode estar vazio", e.message)
         }
     }
 
@@ -46,7 +47,7 @@ class UserUseCaseTest {
             userUseCase.registerUser("Alice", "")
             fail("Deveria ter lançado IllegalArgumentException")
         } catch (e: IllegalArgumentException) {
-            assertEquals("Nome e e-mail não podem estar vazios.", e.message)
+            assertEquals("Email não pode estar vazio", e.message)
         }
     }
 
@@ -56,7 +57,7 @@ class UserUseCaseTest {
             userUseCase.registerUser("   ", "alice@example.com")
             fail("Deveria ter lançado IllegalArgumentException")
         } catch (e: IllegalArgumentException) {
-            assertEquals("Nome e e-mail não podem estar vazios.", e.message)
+            assertEquals("Nome não pode estar vazio", e.message)
         }
     }
 
@@ -66,7 +67,7 @@ class UserUseCaseTest {
             userUseCase.registerUser("Alice", "   ")
             fail("Deveria ter lançado IllegalArgumentException")
         } catch (e: IllegalArgumentException) {
-            assertEquals("Nome e e-mail não podem estar vazios.", e.message)
+            assertEquals("Email não pode estar vazio", e.message)
         }
     }
 
@@ -89,16 +90,16 @@ class UserUseCaseTest {
         userUseCase.registerUser("Charlie", "charlie@example.com")
 
         val userRepository = unitOfWork.userRepository()
-        val user1 = userRepository.getUserByEmail("alice@example.com")
-        val user2 = userRepository.getUserByEmail("bob@example.com")
-        val user3 = userRepository.getUserByEmail("charlie@example.com")
+        val user1 = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
+        val user2 = userRepository.getUserByEmail(UserEmail.of("bob@example.com"))
+        val user3 = userRepository.getUserByEmail(UserEmail.of("charlie@example.com"))
 
         assertNotNull(user1)
         assertNotNull(user2)
         assertNotNull(user3)
-        assertEquals("Alice", user1?.name)
-        assertEquals("Bob", user2?.name)
-        assertEquals("Charlie", user3?.name)
+        assertEquals("Alice", user1?.name?.value)
+        assertEquals("Bob", user2?.name?.value)
+        assertEquals("Charlie", user3?.name?.value)
     }
 
     @Test
@@ -115,11 +116,10 @@ class UserUseCaseTest {
 
         // Verifica que apenas o primeiro usuário foi registrado
         val userRepository = unitOfWork.userRepository()
-        val user1 = userRepository.getUserByEmail("alice@example.com")
-        val user2 = userRepository.getUserByEmail("bob@example.com")
+        val user1 = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
+        val user2 = userRepository.getUserByEmail(UserEmail.of("bob@example.com"))
 
         assertNotNull(user1)
         assertNull(user2)
     }
 }
-

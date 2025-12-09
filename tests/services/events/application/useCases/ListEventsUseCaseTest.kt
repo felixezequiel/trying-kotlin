@@ -2,15 +2,13 @@ import events.adapters.outbound.EventRepositoryAdapter
 import events.application.useCases.ListEventsUseCase
 import events.domain.Event
 import events.domain.EventStatus
-import events.domain.Venue
 import events.infrastructure.persistence.DatabaseContext
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.events.TestHelpers
 
 class ListEventsUseCaseTest {
 
@@ -30,23 +28,7 @@ class ListEventsUseCaseTest {
             status: EventStatus = EventStatus.DRAFT,
             name: String = "Evento Teste"
     ): Event {
-        return Event(
-                partnerId = partnerId,
-                name = name,
-                description = "Descrição do evento",
-                venue =
-                        Venue(
-                                name = "Local Teste",
-                                address = "Rua Teste, 1",
-                                city = "São Paulo",
-                                state = "SP",
-                                zipCode = "01000-000",
-                                capacity = 1000
-                        ),
-                startDate = Instant.now().plus(7, ChronoUnit.DAYS),
-                endDate = Instant.now().plus(8, ChronoUnit.DAYS),
-                status = status
-        )
+        return TestHelpers.createTestEvent(partnerId = partnerId, status = status, name = name)
     }
 
     @Test

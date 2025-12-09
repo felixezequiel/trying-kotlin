@@ -15,7 +15,7 @@ object TestHelpers {
             userId: Long = 1L,
             companyName: String = "Test Company",
             tradeName: String? = "Test Trade",
-            document: String = "12345678901234", // CNPJ válido
+            document: String = "11222333000181", // CNPJ válido (com dígitos verificadores)
             documentType: DocumentType = DocumentType.CNPJ,
             email: String = "test@company.com",
             phone: String = "11999999999",

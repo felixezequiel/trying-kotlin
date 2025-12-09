@@ -1,9 +1,8 @@
-import java.math.BigDecimal
-import java.util.UUID
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.dto.ReserveTicketsRequest
 import tickets.application.useCases.ReserveTicketsUseCase
@@ -30,16 +29,9 @@ class ReserveTicketsUseCaseTest {
             status: TicketTypeStatus = TicketTypeStatus.ACTIVE
     ): TicketType {
         val ticketType =
-                TicketType(
-                        eventId = UUID.randomUUID(),
-                        name = "VIP",
-                        description = "Ingresso VIP",
-                        price = BigDecimal("100.00"),
-                        totalQuantity = 100,
+                TestHelpers.createTestTicketType(
                         availableQuantity = availableQuantity,
                         maxPerCustomer = maxPerCustomer,
-                        salesStartDate = null,
-                        salesEndDate = null,
                         status = status
                 )
         ticketTypeRepository.add(ticketType)
@@ -64,7 +56,7 @@ class ReserveTicketsUseCaseTest {
 
         // Verificar que o estoque foi decrementado
         val updatedTicketType = ticketTypeRepository.getById(ticketType.id)
-        assertEquals(98, updatedTicketType?.availableQuantity)
+        assertEquals(98, updatedTicketType?.availableQuantity?.value)
     }
 
     @Test

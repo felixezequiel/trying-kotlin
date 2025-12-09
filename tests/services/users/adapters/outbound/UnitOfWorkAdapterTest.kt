@@ -2,8 +2,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.users.TestHelpers
 import users.adapters.outbound.UnitOfWorkAdapter
-import users.domain.User
+import users.domain.valueObjects.UserEmail
 import users.infrastructure.persistence.DatabaseContext
 
 class UnitOfWorkAdapterTest {
@@ -20,10 +21,11 @@ class UnitOfWorkAdapterTest {
     @Test
     fun `deve executar bloco dentro de transação`() = runTest {
         var executed = false
-        val result = unitOfWork.runInTransaction {
-            executed = true
-            "test result"
-        }
+        val result =
+                unitOfWork.runInTransaction {
+                    executed = true
+                    "test result"
+                }
 
         assertTrue(executed)
         assertEquals("test result", result)
@@ -39,13 +41,13 @@ class UnitOfWorkAdapterTest {
     fun `deve permitir operações com repositório dentro de transação`() = runTest {
         unitOfWork.runInTransaction {
             val userRepository = unitOfWork.userRepository()
-            val user = User(name = "Alice", email = "alice@example.com")
+            val user = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
             val userId = userRepository.add(user)
-            
+
             assertTrue(userId > 0)
-            val foundUser = userRepository.getUserByEmail("alice@example.com")
+            val foundUser = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
             assertNotNull(foundUser)
-            assertEquals("Alice", foundUser?.name)
+            assertEquals("Alice", foundUser?.name?.value)
         }
     }
 
@@ -54,7 +56,7 @@ class UnitOfWorkAdapterTest {
         try {
             unitOfWork.runInTransaction {
                 val userRepository = unitOfWork.userRepository()
-                val user = User(name = "Alice", email = "alice@example.com")
+                val user = TestHelpers.createTestUser(name = "Alice", email = "alice@example.com")
                 userRepository.add(user)
                 throw RuntimeException("Erro simulado")
             }
@@ -64,8 +66,7 @@ class UnitOfWorkAdapterTest {
 
         // Verifica que o usuário não foi adicionado devido ao rollback
         val userRepository = unitOfWork.userRepository()
-        val foundUser = userRepository.getUserByEmail("alice@example.com")
+        val foundUser = userRepository.getUserByEmail(UserEmail.of("alice@example.com"))
         assertNull(foundUser)
     }
 }
-

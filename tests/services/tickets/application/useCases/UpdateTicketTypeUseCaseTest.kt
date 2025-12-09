@@ -4,11 +4,13 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import services.tickets.TestHelpers
 import tickets.adapters.outbound.TicketTypeRepositoryAdapter
 import tickets.application.dto.UpdateTicketTypeRequest
 import tickets.application.useCases.UpdateTicketTypeUseCase
 import tickets.domain.TicketType
 import tickets.domain.TicketTypeStatus
+import tickets.domain.valueObjects.Quantity
 import tickets.infrastructure.persistence.DatabaseContext
 
 class UpdateTicketTypeUseCaseTest {
@@ -25,18 +27,7 @@ class UpdateTicketTypeUseCaseTest {
     }
 
     private suspend fun createTicketType(): TicketType {
-        val ticketType =
-                TicketType(
-                        eventId = UUID.randomUUID(),
-                        name = "VIP",
-                        description = "Ingresso VIP",
-                        price = BigDecimal("100.00"),
-                        totalQuantity = 100,
-                        availableQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+        val ticketType = TestHelpers.createTestTicketType()
         ticketTypeRepository.add(ticketType)
         return ticketType
     }
@@ -51,7 +42,7 @@ class UpdateTicketTypeUseCaseTest {
         val result = updateTicketTypeUseCase.execute(ticketType.id, request)
 
         // Assert
-        assertEquals("Super VIP", result.name)
+        assertEquals("Super VIP", result.name.value)
         assertEquals(ticketType.description, result.description)
     }
 
@@ -65,7 +56,7 @@ class UpdateTicketTypeUseCaseTest {
         val result = updateTicketTypeUseCase.execute(ticketType.id, request)
 
         // Assert
-        assertEquals(BigDecimal("200.00"), result.price)
+        assertEquals(BigDecimal("200.00"), result.price.value)
     }
 
     @Test
@@ -86,7 +77,7 @@ class UpdateTicketTypeUseCaseTest {
         // Arrange
         val ticketType = createTicketType()
         // Simular que 20 ingressos foram vendidos
-        ticketTypeRepository.decrementAvailableQuantity(ticketType.id, 20)
+        ticketTypeRepository.decrementAvailableQuantity(ticketType.id, Quantity.of(20))
 
         val request = UpdateTicketTypeRequest(totalQuantity = 150)
 
@@ -94,8 +85,8 @@ class UpdateTicketTypeUseCaseTest {
         val result = updateTicketTypeUseCase.execute(ticketType.id, request)
 
         // Assert
-        assertEquals(150, result.totalQuantity)
-        assertEquals(130, result.availableQuantity) // 150 - 20 vendidos
+        assertEquals(150, result.totalQuantity.value)
+        assertEquals(130, result.availableQuantity.value) // 150 - 20 vendidos
     }
 
     @Test

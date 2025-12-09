@@ -13,174 +13,182 @@ import tickets.infrastructure.persistence.DatabaseContext
 
 class CreateTicketTypeUseCaseTest {
 
-    private lateinit var dbContext: DatabaseContext
-    private lateinit var ticketTypeRepository: TicketTypeRepositoryAdapter
-    private lateinit var createTicketTypeUseCase: CreateTicketTypeUseCase
+        private lateinit var dbContext: DatabaseContext
+        private lateinit var ticketTypeRepository: TicketTypeRepositoryAdapter
+        private lateinit var createTicketTypeUseCase: CreateTicketTypeUseCase
 
-    @BeforeEach
-    fun setUp() {
-        dbContext = DatabaseContext()
-        ticketTypeRepository = TicketTypeRepositoryAdapter(dbContext)
-        createTicketTypeUseCase = CreateTicketTypeUseCase(ticketTypeRepository)
-    }
+        @BeforeEach
+        fun setUp() {
+                dbContext = DatabaseContext()
+                ticketTypeRepository = TicketTypeRepositoryAdapter(dbContext)
+                createTicketTypeUseCase = CreateTicketTypeUseCase(ticketTypeRepository)
+        }
 
-    @Test
-    fun `deve criar tipo de ingresso com sucesso`() = runTest {
-        // Arrange
-        val eventId = UUID.randomUUID()
-        val salesStartDate = Instant.now().plus(1, ChronoUnit.DAYS)
-        val salesEndDate = Instant.now().plus(30, ChronoUnit.DAYS)
+        @Test
+        fun `deve criar tipo de ingresso com sucesso`() = runTest {
+                // Arrange
+                val eventId = UUID.randomUUID()
+                val salesStartDate = Instant.now().plus(1, ChronoUnit.DAYS)
+                val salesEndDate = Instant.now().plus(30, ChronoUnit.DAYS)
 
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = eventId.toString(),
-                        name = "VIP",
-                        description = "Ingresso VIP com acesso exclusivo",
-                        price = "150.00",
-                        totalQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = salesStartDate.toString(),
-                        salesEndDate = salesEndDate.toString()
-                )
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = eventId.toString(),
+                                name = "VIP",
+                                description = "Ingresso VIP com acesso exclusivo",
+                                price = "150.00",
+                                totalQuantity = 100,
+                                maxPerCustomer = 4,
+                                salesStartDate = salesStartDate.toString(),
+                                salesEndDate = salesEndDate.toString()
+                        )
 
-        // Act
-        val ticketTypeId = createTicketTypeUseCase.execute(request)
+                // Act
+                val ticketTypeId = createTicketTypeUseCase.execute(request)
 
-        // Assert
-        assertNotNull(ticketTypeId)
-        val ticketType = ticketTypeRepository.getById(ticketTypeId)
-        assertNotNull(ticketType)
-        assertEquals("VIP", ticketType?.name)
-        assertEquals("Ingresso VIP com acesso exclusivo", ticketType?.description)
-        assertEquals(100, ticketType?.totalQuantity)
-        assertEquals(100, ticketType?.availableQuantity)
-        assertEquals(4, ticketType?.maxPerCustomer)
-        assertEquals(TicketTypeStatus.ACTIVE, ticketType?.status)
-    }
+                // Assert
+                assertNotNull(ticketTypeId)
+                val ticketType = ticketTypeRepository.getById(ticketTypeId)
+                assertNotNull(ticketType)
+                assertEquals("VIP", ticketType?.name?.value)
+                assertEquals("Ingresso VIP com acesso exclusivo", ticketType?.description)
+                assertEquals(100, ticketType?.totalQuantity?.value)
+                assertEquals(100, ticketType?.availableQuantity?.value)
+                assertEquals(4, ticketType?.maxPerCustomer?.value)
+                assertEquals(TicketTypeStatus.ACTIVE, ticketType?.status)
+        }
 
-    @Test
-    fun `deve criar tipo de ingresso gratuito`() = runTest {
-        // Arrange
-        val eventId = UUID.randomUUID()
+        @Test
+        fun `deve criar tipo de ingresso gratuito`() = runTest {
+                // Arrange
+                val eventId = UUID.randomUUID()
 
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = eventId.toString(),
-                        name = "Entrada Gratuita",
-                        description = "Ingresso gratuito",
-                        price = "0.00",
-                        totalQuantity = 500,
-                        maxPerCustomer = 2,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = eventId.toString(),
+                                name = "Entrada Gratuita",
+                                description = "Ingresso gratuito",
+                                price = "0.00",
+                                totalQuantity = 500,
+                                maxPerCustomer = 2,
+                                salesStartDate = null,
+                                salesEndDate = null
+                        )
 
-        // Act
-        val ticketTypeId = createTicketTypeUseCase.execute(request)
+                // Act
+                val ticketTypeId = createTicketTypeUseCase.execute(request)
 
-        // Assert
-        val ticketType = ticketTypeRepository.getById(ticketTypeId)
-        assertNotNull(ticketType)
-        assertEquals("0.00", ticketType?.price.toString())
-        assertNull(ticketType?.salesStartDate)
-        assertNull(ticketType?.salesEndDate)
-    }
+                // Assert
+                val ticketType = ticketTypeRepository.getById(ticketTypeId)
+                assertNotNull(ticketType)
+                assertEquals("0.00", ticketType?.price.toString())
+                assertNull(ticketType?.salesStartDate)
+                assertNull(ticketType?.salesEndDate)
+        }
 
-    @Test
-    fun `deve falhar quando preço é negativo`() = runTest {
-        // Arrange
-        val eventId = UUID.randomUUID()
+        @Test
+        fun `deve falhar quando preço é negativo`() = runTest {
+                // Arrange
+                val eventId = UUID.randomUUID()
 
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = eventId.toString(),
-                        name = "Ingresso",
-                        description = "Descrição",
-                        price = "-10.00",
-                        totalQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = eventId.toString(),
+                                name = "Ingresso",
+                                description = "Descrição",
+                                price = "-10.00",
+                                totalQuantity = 100,
+                                maxPerCustomer = 4,
+                                salesStartDate = null,
+                                salesEndDate = null
+                        )
 
-        // Act & Assert
-        val exception =
-                assertThrows(IllegalArgumentException::class.java) {
-                    kotlinx.coroutines.runBlocking { createTicketTypeUseCase.execute(request) }
-                }
-        assertEquals("Preço deve ser maior ou igual a zero", exception.message)
-    }
+                // Act & Assert
+                val exception =
+                        assertThrows(IllegalArgumentException::class.java) {
+                                kotlinx.coroutines.runBlocking {
+                                        createTicketTypeUseCase.execute(request)
+                                }
+                        }
+                assertEquals("Preço deve ser maior ou igual a zero", exception.message)
+        }
 
-    @Test
-    fun `deve falhar quando quantidade total é zero`() = runTest {
-        // Arrange
-        val eventId = UUID.randomUUID()
+        @Test
+        fun `deve falhar quando quantidade total é zero`() = runTest {
+                // Arrange
+                val eventId = UUID.randomUUID()
 
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = eventId.toString(),
-                        name = "Ingresso",
-                        description = "Descrição",
-                        price = "50.00",
-                        totalQuantity = 0,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = eventId.toString(),
+                                name = "Ingresso",
+                                description = "Descrição",
+                                price = "50.00",
+                                totalQuantity = 0,
+                                maxPerCustomer = 4,
+                                salesStartDate = null,
+                                salesEndDate = null
+                        )
 
-        // Act & Assert
-        val exception =
-                assertThrows(IllegalArgumentException::class.java) {
-                    kotlinx.coroutines.runBlocking { createTicketTypeUseCase.execute(request) }
-                }
-        assertEquals("Quantidade total deve ser maior que zero", exception.message)
-    }
+                // Act & Assert
+                val exception =
+                        assertThrows(IllegalArgumentException::class.java) {
+                                kotlinx.coroutines.runBlocking {
+                                        createTicketTypeUseCase.execute(request)
+                                }
+                        }
+                assertEquals("Quantidade deve ser maior que zero", exception.message)
+        }
 
-    @Test
-    fun `deve falhar quando maxPerCustomer é zero`() = runTest {
-        // Arrange
-        val eventId = UUID.randomUUID()
+        @Test
+        fun `deve falhar quando maxPerCustomer é zero`() = runTest {
+                // Arrange
+                val eventId = UUID.randomUUID()
 
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = eventId.toString(),
-                        name = "Ingresso",
-                        description = "Descrição",
-                        price = "50.00",
-                        totalQuantity = 100,
-                        maxPerCustomer = 0,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = eventId.toString(),
+                                name = "Ingresso",
+                                description = "Descrição",
+                                price = "50.00",
+                                totalQuantity = 100,
+                                maxPerCustomer = 0,
+                                salesStartDate = null,
+                                salesEndDate = null
+                        )
 
-        // Act & Assert
-        val exception =
-                assertThrows(IllegalArgumentException::class.java) {
-                    kotlinx.coroutines.runBlocking { createTicketTypeUseCase.execute(request) }
-                }
-        assertEquals("Máximo por cliente deve ser pelo menos 1", exception.message)
-    }
+                // Act & Assert
+                val exception =
+                        assertThrows(IllegalArgumentException::class.java) {
+                                kotlinx.coroutines.runBlocking {
+                                        createTicketTypeUseCase.execute(request)
+                                }
+                        }
+                assertEquals("Quantidade deve ser pelo menos 1", exception.message)
+        }
 
-    @Test
-    fun `deve falhar quando eventId é inválido`() = runTest {
-        // Arrange
-        val request =
-                CreateTicketTypeRequest(
-                        eventId = "invalid-uuid",
-                        name = "Ingresso",
-                        description = "Descrição",
-                        price = "50.00",
-                        totalQuantity = 100,
-                        maxPerCustomer = 4,
-                        salesStartDate = null,
-                        salesEndDate = null
-                )
+        @Test
+        fun `deve falhar quando eventId é inválido`() = runTest {
+                // Arrange
+                val request =
+                        CreateTicketTypeRequest(
+                                eventId = "invalid-uuid",
+                                name = "Ingresso",
+                                description = "Descrição",
+                                price = "50.00",
+                                totalQuantity = 100,
+                                maxPerCustomer = 4,
+                                salesStartDate = null,
+                                salesEndDate = null
+                        )
 
-        // Act & Assert
-        val exception =
-                assertThrows(IllegalArgumentException::class.java) {
-                    kotlinx.coroutines.runBlocking { createTicketTypeUseCase.execute(request) }
-                }
-        assertEquals("Event ID inválido", exception.message)
-    }
+                // Act & Assert
+                val exception =
+                        assertThrows(IllegalArgumentException::class.java) {
+                                kotlinx.coroutines.runBlocking {
+                                        createTicketTypeUseCase.execute(request)
+                                }
+                        }
+                assertEquals("Event ID inválido", exception.message)
+        }
 }

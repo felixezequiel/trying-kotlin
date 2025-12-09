@@ -35,7 +35,7 @@ class SuspendPartnerUseCaseTest {
                 CreatePartnerRequest(
                         companyName = "Empresa Teste",
                         tradeName = null,
-                        document = "12345678901234",
+                        document = "11222333000181",
                         documentType = DocumentType.CNPJ,
                         email = "contato@empresa.com",
                         phone = "11999999999"
@@ -57,7 +57,7 @@ class SuspendPartnerUseCaseTest {
                 CreatePartnerRequest(
                         companyName = "Empresa Teste",
                         tradeName = null,
-                        document = "12345678901234",
+                        document = "11222333000181",
                         documentType = DocumentType.CNPJ,
                         email = "contato@empresa.com",
                         phone = "11999999999"
