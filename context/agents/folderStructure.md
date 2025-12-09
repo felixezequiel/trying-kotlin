@@ -29,6 +29,7 @@ Cada microserviço em `services/<feature>/` segue a estrutura:
 ```
 services/<feature-name>/
   ├── domain/                    # Entidades e objetos de valor do domínio
+  │   └── valueObjects/          # Value Objects (validações encapsuladas)
   ├── application/
   │   ├── dto/                   # Data Transfer Objects
   │   ├── ports/
@@ -93,6 +94,13 @@ shared/
 - **Localização**: `services/<feature>/domain/`
 - **Exemplo**: `services/users/domain/User.kt`
 - **Package**: `<feature>.domain`
+
+### Value Objects
+- **Localização**: `services/<feature>/domain/valueObjects/`
+- **Exemplo**: `services/tickets/domain/valueObjects/Price.kt`
+- **Package**: `<feature>.domain.valueObjects`
+- **Padrão**: `@JvmInline value class` com construtor privado e factory methods
+- **ADR**: [ADR-009: Value Objects Pattern](../adrs/009-value-objects-pattern.md)
 
 ### DTOs (Data Transfer Objects)
 - **Localização**: `services/<feature>/application/dto/`
@@ -159,7 +167,10 @@ Para um novo microserviço `orders`:
 services/
   └── orders/
       ├── domain/
-      │   └── Order.kt
+      │   ├── Order.kt
+      │   └── valueObjects/
+      │       ├── Price.kt
+      │       └── Quantity.kt
       ├── application/
       │   ├── dto/
       │   │   ├── CreateOrderRequest.kt
@@ -188,6 +199,10 @@ services/
 tests/
   └── services/
       └── orders/
+          ├── domain/
+          │   └── valueObjects/
+          │       ├── PriceTest.kt
+          │       └── QuantityTest.kt
           ├── application/
           │   └── useCases/
           │       ├── CreateOrderUseCaseTest.kt

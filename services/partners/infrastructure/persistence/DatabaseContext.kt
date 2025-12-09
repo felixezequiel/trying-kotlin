@@ -38,7 +38,7 @@ class DatabaseContext {
     }
 
     fun findByDocument(document: String): Partner? {
-        return partners.find { it.document == document }
+        return partners.find { it.document.value == document }
     }
 
     fun getAllPartners(): List<Partner> {

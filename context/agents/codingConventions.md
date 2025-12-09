@@ -79,6 +79,103 @@ data class UserResponse(val id: Long, val name: String, val email: String)
 
 ---
 
+## Value Objects
+
+> **ADR Relacionada**: [ADR-009: Value Objects Pattern](../adrs/009-value-objects-pattern.md)
+
+### Regra: Validações de domínio devem estar em Value Objects
+
+Value Objects encapsulam validações e comportamentos no domínio, evitando lógica espalhada em Use Cases.
+
+| Aspecto | Descrição |
+|---------|-----------|
+| **Localização** | `services/{service}/domain/valueObjects/` |
+| **Padrão** | `@JvmInline value class` com construtor privado |
+| **Factory** | Usar `of()` ou `fromString()` no companion object |
+
+### Padrão de Implementação
+
+```kotlin
+// domain/valueObjects/Price.kt
+@JvmInline
+value class Price private constructor(val value: BigDecimal) {
+    
+    init {
+        require(value >= BigDecimal.ZERO) { 
+            "Preço deve ser maior ou igual a zero" 
+        }
+    }
+    
+    companion object {
+        fun of(value: BigDecimal): Price = Price(value)
+        
+        fun fromString(value: String): Price {
+            val decimal = value.toBigDecimalOrNull()
+                ?: throw IllegalArgumentException("Preço inválido: $value")
+            return Price(decimal)
+        }
+    }
+    
+    operator fun plus(other: Price): Price = Price(value + other.value)
+    
+    override fun toString(): String = value.toString()
+}
+```
+
+### ❌ NÃO fazer
+
+```kotlin
+// Use Case com validação - ERRADO!
+class CreateTicketTypeUseCase(...) {
+    suspend fun execute(request: CreateTicketTypeRequest): UUID {
+        val price = try {
+            BigDecimal(request.price)
+        } catch (e: NumberFormatException) {
+            throw IllegalArgumentException("Preço inválido")
+        }
+        if (price < BigDecimal.ZERO) {
+            throw IllegalArgumentException("Preço deve ser >= 0")
+        }
+        // ...
+    }
+}
+```
+
+### ✅ Fazer
+
+```kotlin
+// Use Case usando Value Object - CORRETO
+class CreateTicketTypeUseCase(...) {
+    suspend fun execute(request: CreateTicketTypeRequest): UUID {
+        val price = Price.fromString(request.price)
+        val ticketType = TicketType(
+            price = price,
+            // ...
+        )
+        return ticketTypeRepository.add(ticketType)
+    }
+}
+```
+
+### Quando criar Value Objects
+
+| Criar VO | Não criar VO |
+|----------|--------------|
+| Valores com regras de validação | Strings simples sem regras |
+| Valores com comportamento (operações) | IDs simples (usar UUID diretamente) |
+| Valores reutilizados em múltiplos contextos | Valores únicos sem lógica |
+
+### Value Objects por Serviço
+
+| Serviço | Value Objects |
+|---------|---------------|
+| **Users** | `Email`, `Password`, `UserName` |
+| **Partners** | `Email`, `CompanyName`, `Document` |
+| **Events** | `EventName`, `EventDescription`, `DateRange` |
+| **Tickets** | `Price`, `Quantity`, `TicketName` |
+
+---
+
 ## Anti-Patterns a Evitar
 
 1. **Dependências circulares**: Domain nunca deve importar de Application ou Infrastructure
@@ -88,6 +185,7 @@ data class UserResponse(val id: Long, val name: String, val email: String)
 5. **Funções muito longas**: Prefira funções pequenas e focadas
 6. **Ignorar erros**: Sempre trate exceções adequadamente
 7. **DTOs de domínio em shared**: Cada Bounded Context deve ter seus próprios DTOs (ver ADR-002)
+8. **Validações em Use Cases**: Encapsular em Value Objects (ver ADR-009)
 
 ## Boas Práticas
 

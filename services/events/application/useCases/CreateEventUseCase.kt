@@ -4,24 +4,18 @@ import events.application.dto.CreateEventRequest
 import events.application.ports.outbound.IEventRepository
 import events.domain.Event
 import events.domain.Venue
-import java.time.Instant
+import events.domain.valueObjects.DateRange
+import events.domain.valueObjects.EventDescription
+import events.domain.valueObjects.EventName
 import java.util.UUID
 
 class CreateEventUseCase(private val eventRepository: IEventRepository) {
 
     suspend fun execute(partnerId: UUID, request: CreateEventRequest): UUID {
-        val startDate = Instant.parse(request.startDate)
-        val endDate = Instant.parse(request.endDate)
-
-        // RN-E04: startDate deve ser futura
-        if (startDate.isBefore(Instant.now())) {
-            throw IllegalArgumentException("Data de início deve ser futura")
-        }
-
-        // RN-E05: endDate deve ser após startDate
-        if (endDate.isBefore(startDate) || endDate == startDate) {
-            throw IllegalArgumentException("Data de término deve ser após a data de início")
-        }
+        // Validação encapsulada nos Value Objects
+        val name = EventName.of(request.name)
+        val description = EventDescription.of(request.description)
+        val dateRange = DateRange.fromStrings(request.startDate, request.endDate)
 
         val venue =
                 Venue(
@@ -37,11 +31,10 @@ class CreateEventUseCase(private val eventRepository: IEventRepository) {
         val event =
                 Event(
                         partnerId = partnerId,
-                        name = request.name,
-                        description = request.description,
+                        name = name,
+                        description = description,
                         venue = venue,
-                        startDate = startDate,
-                        endDate = endDate,
+                        dateRange = dateRange,
                         imageUrl = request.imageUrl
                 )
 

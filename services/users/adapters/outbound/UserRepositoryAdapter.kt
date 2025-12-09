@@ -1,8 +1,9 @@
 package users.adapters.outbound
 
+import users.application.ports.outbound.IUserRepository
 import users.domain.Role
 import users.domain.User
-import users.application.ports.outbound.IUserRepository
+import users.domain.valueObjects.UserEmail
 import users.infrastructure.persistence.DatabaseContext
 
 class UserRepositoryAdapter(private val dbContext: DatabaseContext) : IUserRepository {
@@ -14,8 +15,9 @@ class UserRepositoryAdapter(private val dbContext: DatabaseContext) : IUserRepos
         return dbContext.findById(id)
     }
 
-    override suspend fun getUserByEmail(email: String): User? {
-        return dbContext.findUserByEmail(email)
+    override suspend fun getUserByEmail(email: UserEmail): User? {
+        // Infrastructure faz a conversão para tipo primitivo
+        return dbContext.findUserByEmail(email.value)
     }
 
     override suspend fun getAll(): List<User> {

@@ -23,8 +23,8 @@ data class EventResponse(
             return EventResponse(
                     id = event.id.toString(),
                     partnerId = event.partnerId.toString(),
-                    name = event.name,
-                    description = event.description,
+                    name = event.name.value,
+                    description = event.description.value,
                     venue = VenueResponse.fromDomain(event.venue),
                     startDate = event.startDate.toString(),
                     endDate = event.endDate.toString(),

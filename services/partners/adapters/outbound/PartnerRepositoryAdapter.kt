@@ -4,6 +4,7 @@ import java.util.UUID
 import partners.application.ports.outbound.IPartnerRepository
 import partners.domain.Partner
 import partners.domain.PartnerStatus
+import partners.domain.valueObjects.Document
 import partners.infrastructure.persistence.DatabaseContext
 
 class PartnerRepositoryAdapter(private val dbContext: DatabaseContext) : IPartnerRepository {
@@ -20,8 +21,9 @@ class PartnerRepositoryAdapter(private val dbContext: DatabaseContext) : IPartne
         return dbContext.findByUserId(userId)
     }
 
-    override suspend fun getByDocument(document: String): Partner? {
-        return dbContext.findByDocument(document)
+    override suspend fun getByDocument(document: Document): Partner? {
+        // Infrastructure faz a conversão para tipo primitivo
+        return dbContext.findByDocument(document.value)
     }
 
     override suspend fun getAll(): List<Partner> {

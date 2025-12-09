@@ -5,6 +5,9 @@ import java.util.UUID
 import partners.application.dto.UpdatePartnerRequest
 import partners.application.ports.outbound.IPartnerRepository
 import partners.domain.Partner
+import partners.domain.valueObjects.CompanyName
+import partners.domain.valueObjects.PartnerEmail
+import partners.domain.valueObjects.Phone
 
 class UpdatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
 
@@ -20,10 +23,11 @@ class UpdatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
 
         val updatedPartner =
                 partner.copy(
-                        companyName = request.companyName ?: partner.companyName,
+                        companyName = request.companyName?.let { CompanyName.of(it) }
+                                        ?: partner.companyName,
                         tradeName = request.tradeName ?: partner.tradeName,
-                        email = request.email ?: partner.email,
-                        phone = request.phone ?: partner.phone,
+                        email = request.email?.let { PartnerEmail.of(it) } ?: partner.email,
+                        phone = request.phone?.let { Phone.of(it) } ?: partner.phone,
                         updatedAt = Instant.now()
                 )
 

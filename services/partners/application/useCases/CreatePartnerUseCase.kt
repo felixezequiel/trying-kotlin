@@ -4,10 +4,20 @@ import java.util.UUID
 import partners.application.dto.CreatePartnerRequest
 import partners.application.ports.outbound.IPartnerRepository
 import partners.domain.Partner
+import partners.domain.valueObjects.CompanyName
+import partners.domain.valueObjects.Document
+import partners.domain.valueObjects.PartnerEmail
+import partners.domain.valueObjects.Phone
 
 class CreatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
 
     suspend fun execute(userId: Long, request: CreatePartnerRequest): UUID {
+        // Validação encapsulada nos Value Objects
+        val companyName = CompanyName.of(request.companyName)
+        val document = Document.of(request.document, request.documentType)
+        val email = PartnerEmail.of(request.email)
+        val phone = Phone.of(request.phone)
+
         // RN-P02: Um User só pode ter um Partner
         val existingPartner = partnerRepository.getByUserId(userId)
         if (existingPartner != null) {
@@ -15,7 +25,7 @@ class CreatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
         }
 
         // RN-P03: Documento (CPF/CNPJ) deve ser único
-        val existingDocument = partnerRepository.getByDocument(request.document)
+        val existingDocument = partnerRepository.getByDocument(document)
         if (existingDocument != null) {
             throw IllegalStateException("Documento já cadastrado por outro parceiro")
         }
@@ -23,12 +33,12 @@ class CreatePartnerUseCase(private val partnerRepository: IPartnerRepository) {
         val partner =
                 Partner(
                         userId = userId,
-                        companyName = request.companyName,
+                        companyName = companyName,
                         tradeName = request.tradeName,
-                        document = request.document,
+                        document = document,
                         documentType = request.documentType,
-                        email = request.email,
-                        phone = request.phone
+                        email = email,
+                        phone = phone
                 )
 
         return partnerRepository.add(partner)

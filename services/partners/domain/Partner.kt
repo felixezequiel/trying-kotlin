@@ -2,16 +2,20 @@ package partners.domain
 
 import java.time.Instant
 import java.util.UUID
+import partners.domain.valueObjects.CompanyName
+import partners.domain.valueObjects.Document
+import partners.domain.valueObjects.PartnerEmail
+import partners.domain.valueObjects.Phone
 
 data class Partner(
         val id: UUID = UUID.randomUUID(),
-        val userId: Long, // Referência ao User
-        val companyName: String,
-        val tradeName: String?, // Nome fantasia
-        val document: String, // CNPJ ou CPF
+        val userId: Long,
+        val companyName: CompanyName,
+        val tradeName: String?,
+        val document: Document,
         val documentType: DocumentType,
-        val email: String, // Email comercial
-        val phone: String,
+        val email: PartnerEmail,
+        val phone: Phone,
         val status: PartnerStatus = PartnerStatus.PENDING,
         val rejectionReason: String? = null,
         val createdAt: Instant = Instant.now(),

@@ -5,6 +5,9 @@ import events.application.ports.outbound.IEventRepository
 import events.domain.Event
 import events.domain.EventStatus
 import events.domain.Venue
+import events.domain.valueObjects.DateRange
+import events.domain.valueObjects.EventDescription
+import events.domain.valueObjects.EventName
 import java.time.Instant
 import java.util.UUID
 
@@ -33,10 +36,8 @@ class UpdateEventUseCase(private val eventRepository: IEventRepository) {
             throw IllegalArgumentException("Data de início deve ser futura")
         }
 
-        // RN-E05: endDate deve ser após startDate
-        if (newEndDate.isBefore(newStartDate) || newEndDate == newStartDate) {
-            throw IllegalArgumentException("Data de término deve ser após a data de início")
-        }
+        // RN-E05: endDate deve ser após startDate - validação via DateRange
+        val newDateRange = DateRange.of(newStartDate, newEndDate)
 
         val newVenue =
                 request.venue?.let {
@@ -53,11 +54,11 @@ class UpdateEventUseCase(private val eventRepository: IEventRepository) {
 
         val updatedEvent =
                 event.copy(
-                        name = request.name ?: event.name,
-                        description = request.description ?: event.description,
+                        name = request.name?.let { EventName.of(it) } ?: event.name,
+                        description = request.description?.let { EventDescription.of(it) }
+                                        ?: event.description,
                         venue = newVenue,
-                        startDate = newStartDate,
-                        endDate = newEndDate,
+                        dateRange = newDateRange,
                         imageUrl = request.imageUrl ?: event.imageUrl,
                         updatedAt = Instant.now()
                 )
