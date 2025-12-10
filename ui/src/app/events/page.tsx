@@ -112,7 +112,27 @@ export default function EventsPage() {
             return
         }
         try {
-            const created = await api.createEvent(newEvent)
+            // Backend expects a structured Venue, but frontend only has location string
+            // Constructing a venue object to satisfy the contract
+            const venue = {
+                name: newEvent.location || 'Unknown Venue',
+                address: newEvent.location || 'Unknown Address',
+                city: 'Unknown',
+                state: 'UN',
+                zipCode: '00000',
+                capacity: 100
+            }
+
+            const eventData = {
+                name: newEvent.name,
+                description: newEvent.description,
+                startDate: new Date(newEvent.startDate).toISOString(),
+                endDate: new Date(newEvent.endDate).toISOString(),
+                venue: venue,
+                imageUrl: newEvent.imageUrl
+            }
+
+            const created = await api.createEvent(newEvent.partnerId, eventData)
             toast({ title: 'Event created successfully' })
             setIsCreateOpen(false)
             setNewEvent({
@@ -126,6 +146,7 @@ export default function EventsPage() {
             fetchEvents()
             router.push(`/events/${created.id}`)
         } catch (error) {
+            console.error('Create event failed:', error)
             toast({ title: 'Failed to create event', variant: 'destructive' })
         }
     }

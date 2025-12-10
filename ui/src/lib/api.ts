@@ -188,6 +188,7 @@ class ApiClient {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
+                'X-Is-Admin': 'true',
                 ...options.headers,
             },
         })
@@ -222,7 +223,7 @@ class ApiClient {
 
     // Events
     async getEvents(): Promise<Event[]> {
-        return this.request<Event[]>('/api/events')
+        return this.request<Event[]>('/api/events/admin')
     }
 
     async getEvent(id: string): Promise<Event> {
