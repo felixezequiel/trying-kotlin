@@ -33,16 +33,11 @@ class PartnerController(
 
     suspend fun createPartner(call: ApplicationCall) {
         try {
-            // TODO: Obter userId do token de autenticação
-            // Por enquanto, recebemos via header para testes
-            val userId = call.request.headers["X-User-Id"]?.toLongOrNull()
-            if (userId == null) {
-                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Usuário não autenticado"))
-                return
-            }
-
             val request = call.receive<CreatePartnerRequest>()
-            val partnerId = createPartnerUseCase.execute(userId, request)
+
+            // ADR-011: Vinculação inteligente de usuário
+            // O UseCase busca/cria usuário automaticamente pelo email
+            val partnerId = createPartnerUseCase.execute(request)
 
             val partner = getPartnerUseCase.execute(partnerId)
             if (partner != null) {
@@ -58,6 +53,8 @@ class PartnerController(
                     HttpStatusCode.Conflict,
                     ErrorResponse(e.message ?: "Conflito ao criar parceiro")
             )
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Dados inválidos"))
         } catch (e: Exception) {
             call.respond(
                     HttpStatusCode.InternalServerError,

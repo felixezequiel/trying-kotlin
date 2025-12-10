@@ -9,11 +9,13 @@ import partners.application.useCases.ApprovePartnerUseCase
 import partners.application.useCases.CreatePartnerUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
+import partners.mocks.MockUserGateway
 
 class ApprovePartnerUseCaseTest {
 
     private lateinit var partnerStore: InMemoryPartnerStore
     private lateinit var unitOfWork: UnitOfWorkAdapter
+    private lateinit var userGateway: MockUserGateway
     private lateinit var createPartnerUseCase: CreatePartnerUseCase
     private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
 
@@ -21,7 +23,8 @@ class ApprovePartnerUseCaseTest {
     fun setUp() {
         partnerStore = InMemoryPartnerStore()
         unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-        createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+        userGateway = MockUserGateway()
+        createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
         approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
     }
 
@@ -37,7 +40,7 @@ class ApprovePartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
 
         // Act
         val approvedPartner = approvePartnerUseCase.execute(partnerId)
@@ -59,7 +62,7 @@ class ApprovePartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
         approvePartnerUseCase.execute(partnerId) // Aprova primeiro
 
         // Act & Assert

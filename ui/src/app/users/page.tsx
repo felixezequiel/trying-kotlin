@@ -48,14 +48,7 @@ export default function UsersPage() {
             setUsers(data)
         } catch (error) {
             console.error('Failed to fetch users:', error)
-            // Mock data for demo
-            setUsers([
-                { id: '1', name: 'John Doe', email: 'john@example.com' },
-                { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
-                { id: '3', name: 'Bob Wilson', email: 'bob@example.com' },
-                { id: '4', name: 'Alice Brown', email: 'alice@example.com' },
-                { id: '5', name: 'Charlie Davis', email: 'charlie@example.com' },
-            ])
+            toast({ title: 'Failed to load users', variant: 'destructive' })
         } finally {
             setLoading(false)
         }

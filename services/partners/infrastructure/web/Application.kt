@@ -1,5 +1,8 @@
 package partners.infrastructure.web
 
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation as ClientContentNegotiation
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -17,6 +20,7 @@ import kotlinx.serialization.json.Json
 import partners.adapters.inbound.PartnerController
 import partners.adapters.outbound.InMemoryPartnerStore
 import partners.adapters.outbound.UnitOfWorkAdapter
+import partners.adapters.outbound.UserGatewayAdapter
 import partners.application.dto.ErrorResponse
 import partners.application.useCases.ApprovePartnerUseCase
 import partners.application.useCases.CreatePartnerUseCase
@@ -52,8 +56,24 @@ fun Application.configureRouting() {
     val partnerStore = InMemoryPartnerStore()
     val unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
 
+    // HttpClient para comunicação com BFF (ADR-011)
+    val bffBaseUrl = System.getenv("BFF_URL") ?: "http://localhost:8080"
+    val httpClient =
+            HttpClient(CIO) {
+                install(ClientContentNegotiation) {
+                    json(
+                            Json {
+                                prettyPrint = true
+                                isLenient = true
+                                ignoreUnknownKeys = true
+                            }
+                    )
+                }
+            }
+    val userGateway = UserGatewayAdapter(httpClient, bffBaseUrl)
+
     // Use Cases
-    val createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+    val createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
     val updatePartnerUseCase = UpdatePartnerUseCase(unitOfWork)
     val approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
     val rejectPartnerUseCase = RejectPartnerUseCase(unitOfWork)

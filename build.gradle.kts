@@ -89,64 +89,6 @@ tasks.register<JacocoReport>("jacocoFullReport") {
     }
 }
 
-// Task para iniciar todos os serviços (sem Docker)
-tasks.register("dev") {
-    group = "application"
-    description = "Inicia todos os serviços em modo desenvolvimento"
-
-    doLast {
-        println("")
-        println("========================================")
-        println("  MyApp - Iniciando serviços...")
-        println("========================================")
-        println("")
-
-        val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-
-        if (isWindows) {
-            println("Abrindo 2 terminais...")
-            println("  - Users Service: http://localhost:8081")
-            println("  - BFF:           http://localhost:8080")
-            println("")
-
-            // Inicia Users Service em novo terminal
-            ProcessBuilder(
-                            "cmd",
-                            "/c",
-                            "start",
-                            "cmd",
-                            "/k",
-                            "title Users Service && cd /d ${projectDir} && gradle :services:users:run --no-rebuild"
-                    )
-                    .directory(projectDir)
-                    .inheritIO()
-                    .start()
-
-            Thread.sleep(2000)
-
-            // Inicia BFF em novo terminal
-            ProcessBuilder(
-                            "cmd",
-                            "/c",
-                            "start",
-                            "cmd",
-                            "/k",
-                            "title BFF && cd /d ${projectDir} && gradle :bff:run --no-rebuild"
-                    )
-                    .directory(projectDir)
-                    .inheritIO()
-                    .start()
-
-            println("Terminais abertos! Aguarde os serviços iniciarem.")
-            println("")
-            println("Para parar: feche os terminais ou use 'gradle dev-stop'")
-        } else {
-            println("Em Linux/Mac, execute em terminais separados:")
-            println("  Terminal 1: gradle :services:users:run")
-            println("  Terminal 2: gradle :bff:run")
-        }
-    }
-}
 
 // Task para parar os serviços
 tasks.register("dev-stop") {

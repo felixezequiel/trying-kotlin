@@ -9,11 +9,13 @@ import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.RejectPartnerUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
+import partners.mocks.MockUserGateway
 
 class RejectPartnerUseCaseTest {
 
     private lateinit var partnerStore: InMemoryPartnerStore
     private lateinit var unitOfWork: UnitOfWorkAdapter
+    private lateinit var userGateway: MockUserGateway
     private lateinit var createPartnerUseCase: CreatePartnerUseCase
     private lateinit var rejectPartnerUseCase: RejectPartnerUseCase
 
@@ -21,7 +23,8 @@ class RejectPartnerUseCaseTest {
     fun setUp() {
         partnerStore = InMemoryPartnerStore()
         unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-        createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+        userGateway = MockUserGateway()
+        createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
         rejectPartnerUseCase = RejectPartnerUseCase(unitOfWork)
     }
 
@@ -37,7 +40,7 @@ class RejectPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
 
         // Act
         val rejectedPartner = rejectPartnerUseCase.execute(partnerId, "Documentação incompleta")
@@ -59,7 +62,7 @@ class RejectPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
 
         // Act & Assert
         val exception =
@@ -81,7 +84,7 @@ class RejectPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
         rejectPartnerUseCase.execute(partnerId, "Primeiro motivo") // Rejeita primeiro
 
         // Act & Assert

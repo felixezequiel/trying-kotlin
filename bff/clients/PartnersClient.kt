@@ -12,7 +12,11 @@ interface IPartnersClient {
     suspend fun createPartner(request: CreatePartnerRequest): PartnerResponse
     suspend fun getPartnerById(id: String): PartnerResponse?
     suspend fun listPartners(status: String?): List<PartnerResponse>
-    suspend fun updatePartner(id: String, request: UpdatePartnerRequest): PartnerResponse
+    suspend fun updatePartner(
+            userId: Long,
+            id: String,
+            request: UpdatePartnerRequest
+    ): PartnerResponse
     suspend fun approvePartner(id: String): PartnerResponse
     suspend fun rejectPartner(id: String): PartnerResponse
     suspend fun suspendPartner(id: String): PartnerResponse
@@ -53,10 +57,15 @@ class PartnersClient(private val httpClient: HttpClient, private val baseUrl: St
         return response.body()
     }
 
-    override suspend fun updatePartner(id: String, request: UpdatePartnerRequest): PartnerResponse {
+    override suspend fun updatePartner(
+            userId: Long,
+            id: String,
+            request: UpdatePartnerRequest
+    ): PartnerResponse {
         val response =
                 httpClient.put("$baseUrl/partners/$id") {
                     contentType(ContentType.Application.Json)
+                    header("X-User-Id", userId.toString())
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {
@@ -100,16 +109,35 @@ class PartnersClient(private val httpClient: HttpClient, private val baseUrl: St
 
 // DTOs
 @Serializable
-data class CreatePartnerRequest(val userId: String, val companyName: String, val document: String)
+data class CreatePartnerRequest(
+        val companyName: String,
+        val tradeName: String? = null,
+        val document: String,
+        val documentType: String,
+        val email: String,
+        val phone: String
+)
 
 @Serializable
-data class UpdatePartnerRequest(val companyName: String? = null, val document: String? = null)
+data class UpdatePartnerRequest(
+        val companyName: String? = null,
+        val tradeName: String? = null,
+        val email: String? = null,
+        val phone: String? = null
+)
 
 @Serializable
 data class PartnerResponse(
         val id: String,
-        val userId: String,
+        val userId: Long,
         val companyName: String,
+        val tradeName: String? = null,
         val document: String,
-        val status: String
+        val documentType: String,
+        val email: String,
+        val phone: String,
+        val status: String,
+        val rejectionReason: String? = null,
+        val createdAt: String,
+        val approvedAt: String? = null
 )

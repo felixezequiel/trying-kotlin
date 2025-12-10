@@ -17,36 +17,46 @@ import users.application.useCases.UserUseCase
 import users.domain.Role
 
 class UserController(
-    private val registerUserUseCase: UserUseCase,
-    private val getUserByEmailUseCase: GetUserByEmailUseCase,
-    private val getAllUsersUseCase: GetAllUsersUseCase,
-    private val getUserByIdUseCase: GetUserByIdUseCase,
-    private val addRoleToUserUseCase: AddRoleToUserUseCase,
-    private val removeRoleFromUserUseCase: RemoveRoleFromUserUseCase
+        private val registerUserUseCase: UserUseCase,
+        private val getUserByEmailUseCase: GetUserByEmailUseCase,
+        private val getAllUsersUseCase: GetAllUsersUseCase,
+        private val getUserByIdUseCase: GetUserByIdUseCase,
+        private val addRoleToUserUseCase: AddRoleToUserUseCase,
+        private val removeRoleFromUserUseCase: RemoveRoleFromUserUseCase
 ) {
     suspend fun registerUser(call: ApplicationCall) {
         try {
             val request = call.receive<RegisterUserRequest>()
             registerUserUseCase.registerUser(request.name, request.email)
-            
+
             val user = getUserByEmailUseCase.execute(request.email)
             if (user != null) {
                 call.respond(HttpStatusCode.Created, UserResponse.fromDomain(user))
             } else {
-                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Usuário criado mas não encontrado"))
+                call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ErrorResponse("Usuário criado mas não encontrado")
+                )
             }
         } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Dados inválidos"))
         } catch (e: IllegalStateException) {
-            call.respond(HttpStatusCode.Conflict, ErrorResponse(e.message ?: "Conflito ao criar usuário"))
+            call.respond(
+                    HttpStatusCode.Conflict,
+                    ErrorResponse(e.message ?: "Conflito ao criar usuário")
+            )
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 
     suspend fun getUserByEmail(call: ApplicationCall) {
         try {
-            val email = call.parameters["email"]
+            // O email chega via query string na rota /users?email=, conforme Application.kt
+            val email = call.request.queryParameters["email"]
             if (email.isNullOrBlank()) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email é obrigatório"))
                 return
@@ -59,7 +69,10 @@ class UserController(
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Usuário não encontrado"))
             }
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 
@@ -68,7 +81,10 @@ class UserController(
             val users = getAllUsersUseCase.execute()
             call.respond(HttpStatusCode.OK, users.map { UserResponse.fromDomain(it) })
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 
@@ -87,7 +103,10 @@ class UserController(
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Usuário não encontrado"))
             }
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 
@@ -101,7 +120,7 @@ class UserController(
 
             val request = call.receive<AddRoleRequest>()
             addRoleToUserUseCase.execute(userId, request.role)
-            
+
             val user = getUserByIdUseCase.execute(userId)
             if (user != null) {
                 call.respond(HttpStatusCode.OK, UserResponse.fromDomain(user))
@@ -109,9 +128,15 @@ class UserController(
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Usuário não encontrado"))
             }
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message ?: "Usuário não encontrado"))
+            call.respond(
+                    HttpStatusCode.NotFound,
+                    ErrorResponse(e.message ?: "Usuário não encontrado")
+            )
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 
@@ -119,26 +144,30 @@ class UserController(
         try {
             val userId = call.parameters["id"]?.toLongOrNull()
             val roleParam = call.parameters["role"]
-            
+
             if (userId == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID inválido"))
                 return
             }
-            
+
             if (roleParam == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Role é obrigatório"))
                 return
             }
 
-            val role = try {
-                Role.valueOf(roleParam.uppercase())
-            } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Role inválido: $roleParam"))
-                return
-            }
+            val role =
+                    try {
+                        Role.valueOf(roleParam.uppercase())
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(
+                                HttpStatusCode.BadRequest,
+                                ErrorResponse("Role inválido: $roleParam")
+                        )
+                        return
+                    }
 
             removeRoleFromUserUseCase.execute(userId, role)
-            
+
             val user = getUserByIdUseCase.execute(userId)
             if (user != null) {
                 call.respond(HttpStatusCode.OK, UserResponse.fromDomain(user))
@@ -146,11 +175,20 @@ class UserController(
                 call.respond(HttpStatusCode.NotFound, ErrorResponse("Usuário não encontrado"))
             }
         } catch (e: IllegalArgumentException) {
-            call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message ?: "Usuário não encontrado"))
+            call.respond(
+                    HttpStatusCode.NotFound,
+                    ErrorResponse(e.message ?: "Usuário não encontrado")
+            )
         } catch (e: IllegalStateException) {
-            call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Operação não permitida"))
+            call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(e.message ?: "Operação não permitida")
+            )
         } catch (e: Exception) {
-            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Erro interno do servidor: ${e.message}"))
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
         }
     }
 }

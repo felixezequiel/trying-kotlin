@@ -10,11 +10,13 @@ import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.ListPartnersUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
+import partners.mocks.MockUserGateway
 
 class ListPartnersUseCaseTest {
 
         private lateinit var partnerStore: InMemoryPartnerStore
         private lateinit var unitOfWork: UnitOfWorkAdapter
+        private lateinit var userGateway: MockUserGateway
         private lateinit var createPartnerUseCase: CreatePartnerUseCase
         private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
         private lateinit var listPartnersUseCase: ListPartnersUseCase
@@ -24,7 +26,8 @@ class ListPartnersUseCaseTest {
                 partnerStore = InMemoryPartnerStore()
                 unitOfWork =
                         UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-                createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+                userGateway = MockUserGateway()
+                createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
                 approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
                 listPartnersUseCase = ListPartnersUseCase(unitOfWork)
         }
@@ -33,28 +36,24 @@ class ListPartnersUseCaseTest {
         fun `deve listar todos os parceiros`() = runTest {
                 // Arrange
                 createPartnerUseCase.execute(
-                        userId = 1L,
-                        request =
-                                CreatePartnerRequest(
-                                        companyName = "Empresa 1",
-                                        tradeName = null,
-                                        document = "11222333000181",
-                                        documentType = DocumentType.CNPJ,
-                                        email = "empresa1@email.com",
-                                        phone = "11999999999"
-                                )
+                        CreatePartnerRequest(
+                                companyName = "Empresa 1",
+                                tradeName = null,
+                                document = "11222333000181",
+                                documentType = DocumentType.CNPJ,
+                                email = "empresa1@email.com",
+                                phone = "11999999999"
+                        )
                 )
                 createPartnerUseCase.execute(
-                        userId = 2L,
-                        request =
-                                CreatePartnerRequest(
-                                        companyName = "Empresa 2",
-                                        tradeName = null,
-                                        document = "61695227000193",
-                                        documentType = DocumentType.CNPJ,
-                                        email = "empresa2@email.com",
-                                        phone = "11888888888"
-                                )
+                        CreatePartnerRequest(
+                                companyName = "Empresa 2",
+                                tradeName = null,
+                                document = "61695227000193",
+                                documentType = DocumentType.CNPJ,
+                                email = "empresa2@email.com",
+                                phone = "11888888888"
+                        )
                 )
 
                 // Act
@@ -69,28 +68,24 @@ class ListPartnersUseCaseTest {
                 // Arrange
                 val partnerId1 =
                         createPartnerUseCase.execute(
-                                userId = 1L,
-                                request =
-                                        CreatePartnerRequest(
-                                                companyName = "Empresa 1",
-                                                tradeName = null,
-                                                document = "11222333000181",
-                                                documentType = DocumentType.CNPJ,
-                                                email = "empresa1@email.com",
-                                                phone = "11999999999"
-                                        )
+                                CreatePartnerRequest(
+                                        companyName = "Empresa 1",
+                                        tradeName = null,
+                                        document = "11222333000181",
+                                        documentType = DocumentType.CNPJ,
+                                        email = "empresa1@email.com",
+                                        phone = "11999999999"
+                                )
                         )
                 createPartnerUseCase.execute(
-                        userId = 2L,
-                        request =
-                                CreatePartnerRequest(
-                                        companyName = "Empresa 2",
-                                        tradeName = null,
-                                        document = "61695227000193",
-                                        documentType = DocumentType.CNPJ,
-                                        email = "empresa2@email.com",
-                                        phone = "11888888888"
-                                )
+                        CreatePartnerRequest(
+                                companyName = "Empresa 2",
+                                tradeName = null,
+                                document = "61695227000193",
+                                documentType = DocumentType.CNPJ,
+                                email = "empresa2@email.com",
+                                phone = "11888888888"
+                        )
                 )
                 approvePartnerUseCase.execute(partnerId1) // Aprova apenas o primeiro
 

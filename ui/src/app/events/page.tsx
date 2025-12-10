@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, MoreHorizontal, Calendar, MapPin } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, MoreHorizontal, Calendar, MapPin, Eye, Pencil, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,9 +23,17 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { api, Event } from '@/lib/api'
+import { Textarea } from '@/components/ui/textarea'
+import { api, Event, Partner, CreateEventRequest } from '@/lib/api'
 import { useToast } from '@/components/ui/use-toast'
 
 const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'success' | 'warning'> = {
@@ -35,10 +44,21 @@ const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'su
 }
 
 export default function EventsPage() {
+    const router = useRouter()
     const [events, setEvents] = useState<Event[]>([])
+    const [partners, setPartners] = useState<Partner[]>([])
     const [loading, setLoading] = useState(true)
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const { toast } = useToast()
+
+    const [newEvent, setNewEvent] = useState<CreateEventRequest>({
+        partnerId: '',
+        name: '',
+        description: '',
+        startDate: '',
+        endDate: '',
+        location: '',
+    })
 
     const fetchEvents = async () => {
         try {
@@ -46,46 +66,24 @@ export default function EventsPage() {
             setEvents(data)
         } catch (error) {
             console.error('Failed to fetch events:', error)
-            // Mock data for demo
-            setEvents([
-                {
-                    id: '1',
-                    name: 'Summer Music Festival',
-                    description: 'A great music festival',
-                    partnerId: 'partner-1',
-                    status: 'PUBLISHED',
-                    startDate: '2024-06-15',
-                    endDate: '2024-06-17',
-                    location: 'Central Park, NY',
-                },
-                {
-                    id: '2',
-                    name: 'Tech Conference 2024',
-                    description: 'Annual tech conference',
-                    partnerId: 'partner-2',
-                    status: 'DRAFT',
-                    startDate: '2024-07-20',
-                    endDate: '2024-07-22',
-                    location: 'Convention Center, SF',
-                },
-                {
-                    id: '3',
-                    name: 'Art Exhibition',
-                    description: 'Modern art showcase',
-                    partnerId: 'partner-1',
-                    status: 'PUBLISHED',
-                    startDate: '2024-08-01',
-                    endDate: '2024-08-15',
-                    location: 'Art Gallery, LA',
-                },
-            ])
+            toast({ title: 'Failed to load events', variant: 'destructive' })
         } finally {
             setLoading(false)
         }
     }
 
+    const fetchPartners = async () => {
+        try {
+            const data = await api.getPartners()
+            setPartners(data.filter(p => p.status === 'APPROVED'))
+        } catch (error) {
+            console.error('Failed to fetch partners:', error)
+        }
+    }
+
     useEffect(() => {
         fetchEvents()
+        fetchPartners()
     }, [])
 
     const handlePublish = async (id: string) => {
@@ -105,6 +103,30 @@ export default function EventsPage() {
             fetchEvents()
         } catch (error) {
             toast({ title: 'Failed to cancel event', variant: 'destructive' })
+        }
+    }
+
+    const handleCreateEvent = async () => {
+        if (!newEvent.partnerId || !newEvent.name || !newEvent.startDate || !newEvent.endDate) {
+            toast({ title: 'Please fill all required fields', variant: 'destructive' })
+            return
+        }
+        try {
+            const created = await api.createEvent(newEvent)
+            toast({ title: 'Event created successfully' })
+            setIsCreateOpen(false)
+            setNewEvent({
+                partnerId: '',
+                name: '',
+                description: '',
+                startDate: '',
+                endDate: '',
+                location: '',
+            })
+            fetchEvents()
+            router.push(`/events/${created.id}`)
+        } catch (error) {
+            toast({ title: 'Failed to create event', variant: 'destructive' })
         }
     }
 
@@ -134,36 +156,76 @@ export default function EventsPage() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Event Name</Label>
-                                <Input id="name" placeholder="Enter event name" />
+                                <Label htmlFor="partner">Partner *</Label>
+                                <Select
+                                    value={newEvent.partnerId}
+                                    onValueChange={(value: string) => setNewEvent({ ...newEvent, partnerId: value })}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a partner" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {partners.map((partner) => (
+                                            <SelectItem key={partner.id} value={partner.id}>
+                                                {partner.companyName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Event Name *</Label>
+                                <Input
+                                    id="name"
+                                    placeholder="Enter event name"
+                                    value={newEvent.name}
+                                    onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="description">Description</Label>
-                                <Input id="description" placeholder="Enter description" />
+                                <Textarea
+                                    id="description"
+                                    placeholder="Enter description"
+                                    value={newEvent.description}
+                                    onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="startDate">Start Date</Label>
-                                    <Input id="startDate" type="date" />
+                                    <Label htmlFor="startDate">Start Date *</Label>
+                                    <Input
+                                        id="startDate"
+                                        type="date"
+                                        value={newEvent.startDate}
+                                        onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="endDate">End Date</Label>
-                                    <Input id="endDate" type="date" />
+                                    <Label htmlFor="endDate">End Date *</Label>
+                                    <Input
+                                        id="endDate"
+                                        type="date"
+                                        value={newEvent.endDate}
+                                        onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
+                                    />
                                 </div>
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="location">Location</Label>
-                                <Input id="location" placeholder="Enter location" />
+                                <Input
+                                    id="location"
+                                    placeholder="Enter location"
+                                    value={newEvent.location}
+                                    onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                                />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button onClick={() => {
-                                toast({ title: 'Event created successfully' })
-                                setIsCreateOpen(false)
-                            }}>
+                            <Button onClick={handleCreateEvent}>
                                 Create Event
                             </Button>
                         </DialogFooter>
@@ -207,12 +269,20 @@ export default function EventsPage() {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                                            <DropdownMenuItem>Edit Event</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => router.push(`/events/${event.id}`)}>
+                                                <Eye className="mr-2 h-4 w-4" />
+                                                View Details
+                                            </DropdownMenuItem>
                                             {event.status === 'DRAFT' && (
-                                                <DropdownMenuItem onClick={() => handlePublish(event.id)}>
-                                                    Publish
-                                                </DropdownMenuItem>
+                                                <>
+                                                    <DropdownMenuItem onClick={() => router.push(`/events/${event.id}`)}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit Event
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handlePublish(event.id)}>
+                                                        Publish
+                                                    </DropdownMenuItem>
+                                                </>
                                             )}
                                             {event.status === 'PUBLISHED' && (
                                                 <DropdownMenuItem

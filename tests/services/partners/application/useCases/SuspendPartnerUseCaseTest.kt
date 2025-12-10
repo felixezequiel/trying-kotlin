@@ -10,11 +10,13 @@ import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.SuspendPartnerUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
+import partners.mocks.MockUserGateway
 
 class SuspendPartnerUseCaseTest {
 
     private lateinit var partnerStore: InMemoryPartnerStore
     private lateinit var unitOfWork: UnitOfWorkAdapter
+    private lateinit var userGateway: MockUserGateway
     private lateinit var createPartnerUseCase: CreatePartnerUseCase
     private lateinit var approvePartnerUseCase: ApprovePartnerUseCase
     private lateinit var suspendPartnerUseCase: SuspendPartnerUseCase
@@ -23,7 +25,8 @@ class SuspendPartnerUseCaseTest {
     fun setUp() {
         partnerStore = InMemoryPartnerStore()
         unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-        createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+        userGateway = MockUserGateway()
+        createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
         approvePartnerUseCase = ApprovePartnerUseCase(unitOfWork)
         suspendPartnerUseCase = SuspendPartnerUseCase(unitOfWork)
     }
@@ -40,7 +43,7 @@ class SuspendPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
         approvePartnerUseCase.execute(partnerId)
 
         // Act
@@ -62,7 +65,7 @@ class SuspendPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
         // Parceiro está PENDING
 
         // Act & Assert

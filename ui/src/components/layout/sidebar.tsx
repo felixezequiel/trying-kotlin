@@ -9,6 +9,8 @@ import {
     Ticket,
     LayoutDashboard,
     Settings,
+    ShoppingCart,
+    Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,8 @@ const navigation = [
     { name: 'Partners', href: '/partners', icon: Building2 },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Tickets', href: '/tickets', icon: Ticket },
+    { name: 'Orders', href: '/orders', icon: ShoppingCart },
+    { name: 'Reservations', href: '/reservations', icon: Clock },
 ]
 
 const secondaryNavigation = [

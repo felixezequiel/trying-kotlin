@@ -9,11 +9,13 @@ import partners.application.dto.CreatePartnerRequest
 import partners.application.useCases.CreatePartnerUseCase
 import partners.application.useCases.GetPartnerUseCase
 import partners.domain.DocumentType
+import partners.mocks.MockUserGateway
 
 class GetPartnerUseCaseTest {
 
     private lateinit var partnerStore: InMemoryPartnerStore
     private lateinit var unitOfWork: UnitOfWorkAdapter
+    private lateinit var userGateway: MockUserGateway
     private lateinit var createPartnerUseCase: CreatePartnerUseCase
     private lateinit var getPartnerUseCase: GetPartnerUseCase
 
@@ -21,7 +23,8 @@ class GetPartnerUseCaseTest {
     fun setUp() {
         partnerStore = InMemoryPartnerStore()
         unitOfWork = UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-        createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+        userGateway = MockUserGateway()
+        createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
         getPartnerUseCase = GetPartnerUseCase(unitOfWork)
     }
 
@@ -37,7 +40,7 @@ class GetPartnerUseCaseTest {
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+        val partnerId = createPartnerUseCase.execute(request)
 
         // Act
         val partner = getPartnerUseCase.execute(partnerId)
@@ -62,22 +65,22 @@ class GetPartnerUseCaseTest {
         // Arrange
         val request =
                 CreatePartnerRequest(
-                        companyName = "Empresa do User 5",
+                        companyName = "Empresa do User",
                         tradeName = null,
                         document = "11222333000181",
                         documentType = DocumentType.CNPJ,
                         email = "contato@empresa.com",
                         phone = "11999999999"
                 )
-        createPartnerUseCase.execute(userId = 5L, request = request)
+        createPartnerUseCase.execute(request)
 
-        // Act
-        val partner = getPartnerUseCase.executeByUserId(5L)
+        // Act - userId é 1 pois é o primeiro email no mock
+        val partner = getPartnerUseCase.executeByUserId(1L)
 
         // Assert
         assertNotNull(partner)
-        assertEquals("Empresa do User 5", partner?.companyName?.value)
-        assertEquals(5L, partner?.userId)
+        assertEquals("Empresa do User", partner?.companyName?.value)
+        assertEquals(1L, partner?.userId)
     }
 
     @Test

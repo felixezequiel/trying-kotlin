@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Ticket, DollarSign, Package, TrendingUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Ticket, DollarSign, Package, TrendingUp, RefreshCw, Eye } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -12,57 +14,50 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
+import { api, TicketType, Event } from '@/lib/api'
+import { useToast } from '@/components/ui/use-toast'
 
-const ticketTypes = [
-    {
-        id: '1',
-        eventName: 'Summer Music Festival',
-        name: 'VIP Pass',
-        price: 299.99,
-        quantity: 100,
-        availableQuantity: 45,
-        active: true,
-    },
-    {
-        id: '2',
-        eventName: 'Summer Music Festival',
-        name: 'General Admission',
-        price: 89.99,
-        quantity: 500,
-        availableQuantity: 234,
-        active: true,
-    },
-    {
-        id: '3',
-        eventName: 'Tech Conference 2024',
-        name: 'Full Access',
-        price: 499.99,
-        quantity: 200,
-        availableQuantity: 120,
-        active: true,
-    },
-    {
-        id: '4',
-        eventName: 'Tech Conference 2024',
-        name: 'Workshop Only',
-        price: 149.99,
-        quantity: 50,
-        availableQuantity: 0,
-        active: false,
-    },
-    {
-        id: '5',
-        eventName: 'Art Exhibition',
-        name: 'Standard Entry',
-        price: 25.00,
-        quantity: 1000,
-        availableQuantity: 876,
-        active: true,
-    },
-]
+interface TicketTypeWithEvent extends TicketType {
+    eventName: string
+}
 
 export default function TicketsPage() {
-    const [tickets] = useState(ticketTypes)
+    const router = useRouter()
+    const [tickets, setTickets] = useState<TicketTypeWithEvent[]>([])
+    const [loading, setLoading] = useState(true)
+    const { toast } = useToast()
+
+    const fetchTickets = async () => {
+        try {
+            const events = await api.getEvents()
+            const allTickets: TicketTypeWithEvent[] = []
+
+            for (const event of events) {
+                try {
+                    const eventTickets = await api.getTicketTypesByEvent(event.id)
+                    allTickets.push(
+                        ...eventTickets.map(t => ({
+                            ...t,
+                            eventName: event.name,
+                        }))
+                    )
+                } catch {
+                    // Event might not have ticket types
+                }
+            }
+
+            setTickets(allTickets)
+        } catch (error) {
+            console.error('Failed to fetch tickets:', error)
+            toast({ title: 'Failed to load tickets', variant: 'destructive' })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTickets()
+    }, [])
 
     const totalRevenue = tickets.reduce((acc, t) => acc + (t.quantity - t.availableQuantity) * t.price, 0)
     const totalSold = tickets.reduce((acc, t) => acc + (t.quantity - t.availableQuantity), 0)
@@ -71,11 +66,17 @@ export default function TicketsPage() {
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
-                <p className="text-muted-foreground">
-                    Overview of all ticket types across events
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Tickets</h1>
+                    <p className="text-muted-foreground">
+                        Overview of all ticket types across events
+                    </p>
+                </div>
+                <Button variant="outline" onClick={fetchTickets}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
+                </Button>
             </div>
 
             {/* Stats Cards */}
@@ -143,50 +144,76 @@ export default function TicketsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Event</TableHead>
-                                <TableHead>Ticket Type</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                                <TableHead className="text-right">Sold</TableHead>
-                                <TableHead className="text-right">Available</TableHead>
-                                <TableHead>Status</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {tickets.map((ticket) => (
-                                <TableRow key={ticket.id}>
-                                    <TableCell className="font-medium">{ticket.eventName}</TableCell>
-                                    <TableCell>{ticket.name}</TableCell>
-                                    <TableCell className="text-right">
-                                        ${ticket.price.toFixed(2)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {ticket.quantity - ticket.availableQuantity}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <span>{ticket.availableQuantity}</span>
-                                            <div className="h-2 w-16 rounded-full bg-secondary">
-                                                <div
-                                                    className="h-2 rounded-full bg-primary"
-                                                    style={{
-                                                        width: `${(ticket.availableQuantity / ticket.quantity) * 100}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={ticket.active ? 'success' : 'secondary'}>
-                                            {ticket.active ? 'Active' : 'Inactive'}
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
+                    {loading ? (
+                        <div className="space-y-3">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="h-12 animate-pulse rounded bg-muted" />
                             ))}
-                        </TableBody>
-                    </Table>
+                        </div>
+                    ) : tickets.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <Ticket className="h-12 w-12 text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-semibold">No ticket types yet</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Create ticket types in the event details page
+                            </p>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Event</TableHead>
+                                    <TableHead>Ticket Type</TableHead>
+                                    <TableHead className="text-right">Price</TableHead>
+                                    <TableHead className="text-right">Sold</TableHead>
+                                    <TableHead className="text-right">Available</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="w-[70px]"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {tickets.map((ticket) => (
+                                    <TableRow key={ticket.id}>
+                                        <TableCell className="font-medium">{ticket.eventName}</TableCell>
+                                        <TableCell>{ticket.name}</TableCell>
+                                        <TableCell className="text-right">
+                                            ${ticket.price.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {ticket.quantity - ticket.availableQuantity}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <span>{ticket.availableQuantity}</span>
+                                                <div className="h-2 w-16 rounded-full bg-secondary">
+                                                    <div
+                                                        className="h-2 rounded-full bg-primary"
+                                                        style={{
+                                                            width: `${ticket.quantity > 0 ? (ticket.availableQuantity / ticket.quantity) * 100 : 0}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={ticket.active ? 'success' : 'secondary'}>
+                                                {ticket.active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => router.push(`/events/${ticket.eventId}`)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>

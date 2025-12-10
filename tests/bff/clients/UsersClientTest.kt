@@ -39,7 +39,7 @@ class UsersClientTest {
             assertEquals(HttpMethod.Post, request.method)
             
             respond(
-                content = """{"id": "123", "name": "Alice", "email": "alice@example.com"}""",
+                content = """{"id": 123, "name": "Alice", "email": "alice@example.com"}""",
                 status = HttpStatusCode.Created,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
@@ -51,7 +51,7 @@ class UsersClientTest {
         val result = usersClient.registerUser(request)
 
         // Assert
-        assertEquals("123", result.id)
+        assertEquals(123L, result.id)
         assertEquals("Alice", result.name)
         assertEquals("alice@example.com", result.email)
     }
@@ -86,7 +86,7 @@ class UsersClientTest {
             assertEquals(HttpMethod.Get, request.method)
             
             respond(
-                content = """{"id": "123", "name": "Alice", "email": "alice@example.com"}""",
+                content = """{"id": 123, "name": "Alice", "email": "alice@example.com"}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             )
@@ -98,7 +98,7 @@ class UsersClientTest {
 
         // Assert
         assertNotNull(result)
-        assertEquals("123", result?.id)
+        assertEquals(123L, result?.id)
         assertEquals("Alice", result?.name)
         assertEquals("alice@example.com", result?.email)
     }
@@ -152,8 +152,8 @@ class UsersClientTest {
             
             respond(
                 content = """[
-                    {"id": "1", "name": "Alice", "email": "alice@example.com"},
-                    {"id": "2", "name": "Bob", "email": "bob@example.com"}
+                    {"id": 1, "name": "Alice", "email": "alice@example.com"},
+                    {"id": 2, "name": "Bob", "email": "bob@example.com"}
                 ]""",
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())

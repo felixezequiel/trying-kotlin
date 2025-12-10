@@ -9,25 +9,33 @@ import shared.exceptions.ServiceException
 
 /** Interface para o cliente de Events */
 interface IEventsClient {
-    suspend fun createEvent(request: CreateEventRequest): EventResponse
+    suspend fun createEvent(partnerId: String, request: CreateEventRequest): EventResponse
     suspend fun getEventById(id: String): EventResponse?
     suspend fun listPublicEvents(): List<EventResponse>
     suspend fun listEventsByStatus(status: String?): List<EventResponse>
     suspend fun listPartnerEvents(partnerId: String): List<EventResponse>
-    suspend fun updateEvent(id: String, request: UpdateEventRequest): EventResponse
-    suspend fun publishEvent(id: String): EventResponse
-    suspend fun cancelEvent(id: String): EventResponse
-    suspend fun finishEvent(id: String): EventResponse
+    suspend fun updateEvent(
+            partnerId: String,
+            id: String,
+            request: UpdateEventRequest
+    ): EventResponse
+    suspend fun publishEvent(partnerId: String, id: String): EventResponse
+    suspend fun cancelEvent(partnerId: String?, id: String, isAdmin: Boolean): EventResponse
+    suspend fun finishEvent(partnerId: String?, id: String, isAdmin: Boolean): EventResponse
 }
 
 /** Cliente HTTP para o serviço de Events */
 class EventsClient(private val httpClient: HttpClient, private val baseUrl: String) :
         IEventsClient {
 
-    override suspend fun createEvent(request: CreateEventRequest): EventResponse {
+    override suspend fun createEvent(
+            partnerId: String,
+            request: CreateEventRequest
+    ): EventResponse {
         val response =
                 httpClient.post("$baseUrl/events") {
                     contentType(ContentType.Application.Json)
+                    header("X-Partner-Id", partnerId)
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {
@@ -70,10 +78,15 @@ class EventsClient(private val httpClient: HttpClient, private val baseUrl: Stri
         return response.body()
     }
 
-    override suspend fun updateEvent(id: String, request: UpdateEventRequest): EventResponse {
+    override suspend fun updateEvent(
+            partnerId: String,
+            id: String,
+            request: UpdateEventRequest
+    ): EventResponse {
         val response =
                 httpClient.put("$baseUrl/events/$id") {
                     contentType(ContentType.Application.Json)
+                    header("X-Partner-Id", partnerId)
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {
@@ -82,24 +95,41 @@ class EventsClient(private val httpClient: HttpClient, private val baseUrl: Stri
         return response.body()
     }
 
-    override suspend fun publishEvent(id: String): EventResponse {
-        val response = httpClient.post("$baseUrl/events/$id/publish")
+    override suspend fun publishEvent(partnerId: String, id: String): EventResponse {
+        val response =
+                httpClient.post("$baseUrl/events/$id/publish") { header("X-Partner-Id", partnerId) }
         if (!response.status.isSuccess()) {
             throw ServiceException("Failed to publish event", response.status.value)
         }
         return response.body()
     }
 
-    override suspend fun cancelEvent(id: String): EventResponse {
-        val response = httpClient.post("$baseUrl/events/$id/cancel")
+    override suspend fun cancelEvent(
+            partnerId: String?,
+            id: String,
+            isAdmin: Boolean
+    ): EventResponse {
+        val response =
+                httpClient.post("$baseUrl/events/$id/cancel") {
+                    partnerId?.let { header("X-Partner-Id", it) }
+                    header("X-Is-Admin", isAdmin.toString())
+                }
         if (!response.status.isSuccess()) {
             throw ServiceException("Failed to cancel event", response.status.value)
         }
         return response.body()
     }
 
-    override suspend fun finishEvent(id: String): EventResponse {
-        val response = httpClient.post("$baseUrl/events/$id/finish")
+    override suspend fun finishEvent(
+            partnerId: String?,
+            id: String,
+            isAdmin: Boolean
+    ): EventResponse {
+        val response =
+                httpClient.post("$baseUrl/events/$id/finish") {
+                    partnerId?.let { header("X-Partner-Id", it) }
+                    header("X-Is-Admin", isAdmin.toString())
+                }
         if (!response.status.isSuccess()) {
             throw ServiceException("Failed to finish event", response.status.value)
         }
@@ -109,22 +139,43 @@ class EventsClient(private val httpClient: HttpClient, private val baseUrl: Stri
 
 // DTOs
 @Serializable
+data class VenueRequest(
+        val name: String,
+        val address: String,
+        val city: String,
+        val state: String,
+        val zipCode: String,
+        val capacity: Int? = null
+)
+
+@Serializable
+data class VenueResponse(
+        val name: String,
+        val address: String,
+        val city: String,
+        val state: String,
+        val zipCode: String,
+        val capacity: Int? = null
+)
+
+@Serializable
 data class CreateEventRequest(
-        val partnerId: String,
         val name: String,
         val description: String,
+        val venue: VenueRequest,
         val startDate: String,
         val endDate: String,
-        val location: String
+        val imageUrl: String? = null
 )
 
 @Serializable
 data class UpdateEventRequest(
         val name: String? = null,
         val description: String? = null,
+        val venue: VenueRequest? = null,
         val startDate: String? = null,
         val endDate: String? = null,
-        val location: String? = null
+        val imageUrl: String? = null
 )
 
 @Serializable
@@ -133,8 +184,11 @@ data class EventResponse(
         val partnerId: String,
         val name: String,
         val description: String,
-        val status: String,
+        val venue: VenueResponse,
         val startDate: String,
         val endDate: String,
-        val location: String
+        val status: String,
+        val imageUrl: String? = null,
+        val createdAt: String,
+        val publishedAt: String? = null
 )

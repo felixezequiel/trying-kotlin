@@ -1,4 +1,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+console.log('API_BASE_URL configured as:', API_BASE_URL)
+
+// ============ Types ============
 
 export interface User {
     id: string
@@ -6,23 +9,42 @@ export interface User {
     email: string
 }
 
+export interface Venue {
+    name: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    capacity?: number
+}
+
 export interface Event {
     id: string
     name: string
     description: string
     partnerId: string
+    venue: Venue
     status: 'DRAFT' | 'PUBLISHED' | 'CANCELLED' | 'FINISHED'
     startDate: string
     endDate: string
-    location: string
+    imageUrl?: string
+    createdAt: string
+    publishedAt?: string
 }
 
 export interface Partner {
     id: string
-    name: string
-    email: string
+    userId: number
+    companyName: string
+    tradeName?: string
     document: string
+    documentType: string
+    email: string
+    phone: string
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED'
+    rejectionReason?: string
+    createdAt: string
+    approvedAt?: string
 }
 
 export interface TicketType {
@@ -34,6 +56,120 @@ export interface TicketType {
     quantity: number
     availableQuantity: number
     active: boolean
+}
+
+export interface Order {
+    id: string
+    customerId: string
+    reservationId: string
+    status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED'
+    totalAmount: number
+    paymentId?: string
+    createdAt: string
+    paidAt?: string
+}
+
+export interface IssuedTicket {
+    id: string
+    orderId: string
+    ticketTypeId: string
+    code: string
+    status: 'VALID' | 'USED' | 'CANCELLED'
+    usedAt?: string
+}
+
+export interface Reservation {
+    id: string
+    customerId: string
+    eventId: string
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'EXPIRED' | 'CONVERTED'
+    items: ReservationItem[]
+    totalAmount: number
+    expiresAt: string
+    createdAt: string
+}
+
+export interface ReservationItem {
+    ticketTypeId: string
+    quantity: number
+    unitPrice: number
+    subtotal: number
+}
+
+// ============ Request Types ============
+
+export interface VenueRequest {
+    name: string
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    capacity?: number
+}
+
+export interface CreateEventRequest {
+    name: string
+    description: string
+    venue: VenueRequest
+    startDate: string
+    endDate: string
+    imageUrl?: string
+}
+
+export interface UpdateEventRequest {
+    name?: string
+    description?: string
+    venue?: VenueRequest
+    startDate?: string
+    endDate?: string
+    imageUrl?: string
+}
+
+export interface CreatePartnerRequest {
+    companyName: string
+    tradeName?: string
+    document: string
+    documentType?: string
+    email: string
+    phone: string
+}
+
+export interface UpdatePartnerRequest {
+    companyName?: string
+    tradeName?: string
+    email?: string
+    phone?: string
+}
+
+export interface CreateTicketTypeRequest {
+    eventId: string
+    name: string
+    description: string
+    price: number
+    quantity: number
+}
+
+export interface UpdateTicketTypeRequest {
+    name?: string
+    description?: string
+    price?: number
+    quantity?: number
+}
+
+export interface CreateReservationRequest {
+    customerId: string
+    eventId: string
+    items: { ticketTypeId: string; quantity: number }[]
+}
+
+export interface CreateOrderRequest {
+    customerId: string
+    reservationId: string
+}
+
+export interface ProcessPaymentRequest {
+    paymentMethod: string
+    paymentDetails?: Record<string, string>
 }
 
 class ApiClient {
@@ -58,7 +194,7 @@ class ApiClient {
 
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: 'Unknown error' }))
-            throw new Error(error.error || `HTTP error! status: ${response.status}`)
+            throw new Error(error.error || error.message || `HTTP error! status: ${response.status}`)
         }
 
         return response.json()
@@ -93,30 +229,41 @@ class ApiClient {
         return this.request<Event>(`/api/events/${id}`)
     }
 
-    async createEvent(data: Partial<Event>): Promise<Event> {
+    async createEvent(partnerId: string, data: CreateEventRequest): Promise<Event> {
         return this.request<Event>('/api/events', {
             method: 'POST',
+            headers: { 'X-Partner-Id': partnerId },
             body: JSON.stringify(data),
         })
     }
 
-    async updateEvent(id: string, data: Partial<Event>): Promise<Event> {
+    async updateEvent(partnerId: string, id: string, data: UpdateEventRequest): Promise<Event> {
         return this.request<Event>(`/api/events/${id}`, {
             method: 'PUT',
+            headers: { 'X-Partner-Id': partnerId },
             body: JSON.stringify(data),
         })
     }
 
-    async publishEvent(id: string): Promise<Event> {
-        return this.request<Event>(`/api/events/${id}/publish`, { method: 'POST' })
+    async publishEvent(partnerId: string, id: string): Promise<Event> {
+        return this.request<Event>(`/api/events/${id}/publish`, {
+            method: 'POST',
+            headers: { 'X-Partner-Id': partnerId },
+        })
     }
 
-    async cancelEvent(id: string): Promise<Event> {
-        return this.request<Event>(`/api/events/${id}/cancel`, { method: 'POST' })
+    async cancelEvent(partnerId: string, id: string): Promise<Event> {
+        return this.request<Event>(`/api/events/${id}/cancel`, {
+            method: 'POST',
+            headers: { 'X-Partner-Id': partnerId },
+        })
     }
 
-    async finishEvent(id: string): Promise<Event> {
-        return this.request<Event>(`/api/events/${id}/finish`, { method: 'POST' })
+    async finishEvent(partnerId: string, id: string): Promise<Event> {
+        return this.request<Event>(`/api/events/${id}/finish`, {
+            method: 'POST',
+            headers: { 'X-Partner-Id': partnerId },
+        })
     }
 
     // Partners
@@ -128,14 +275,14 @@ class ApiClient {
         return this.request<Partner>(`/api/partners/${id}`)
     }
 
-    async createPartner(data: Partial<Partner>): Promise<Partner> {
+    async createPartner(data: CreatePartnerRequest): Promise<Partner> {
         return this.request<Partner>('/api/partners', {
             method: 'POST',
             body: JSON.stringify(data),
         })
     }
 
-    async updatePartner(id: string, data: Partial<Partner>): Promise<Partner> {
+    async updatePartner(id: string, data: UpdatePartnerRequest): Promise<Partner> {
         return this.request<Partner>(`/api/partners/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
@@ -183,6 +330,78 @@ class ApiClient {
 
     async deactivateTicketType(id: string): Promise<void> {
         await this.request(`/api/ticket-types/${id}`, { method: 'DELETE' })
+    }
+
+    // Orders
+    async createOrder(data: CreateOrderRequest): Promise<Order> {
+        return this.request<Order>('/api/orders', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async getOrder(id: string): Promise<Order> {
+        return this.request<Order>(`/api/orders/${id}`)
+    }
+
+    async getMyOrders(customerId: string): Promise<Order[]> {
+        return this.request<Order[]>('/api/orders/me', {
+            headers: { 'X-Customer-Id': customerId },
+        })
+    }
+
+    async processPayment(orderId: string, data: ProcessPaymentRequest): Promise<Order> {
+        return this.request<Order>(`/api/orders/${orderId}/pay`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async refundOrder(orderId: string): Promise<Order> {
+        return this.request<Order>(`/api/orders/${orderId}/refund`, { method: 'POST' })
+    }
+
+    async getOrderTickets(orderId: string): Promise<IssuedTicket[]> {
+        return this.request<IssuedTicket[]>(`/api/orders/${orderId}/tickets`)
+    }
+
+    // Issued Tickets
+    async getTicketByCode(code: string): Promise<IssuedTicket> {
+        return this.request<IssuedTicket>(`/api/tickets/${code}`)
+    }
+
+    async validateTicket(code: string): Promise<IssuedTicket> {
+        return this.request<IssuedTicket>(`/api/tickets/${code}/validate`, { method: 'POST' })
+    }
+
+    // Reservations
+    async createReservation(data: CreateReservationRequest): Promise<Reservation> {
+        return this.request<Reservation>('/api/reservations', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
+    }
+
+    async getReservation(id: string): Promise<Reservation> {
+        return this.request<Reservation>(`/api/reservations/${id}`)
+    }
+
+    async getMyReservations(customerId: string): Promise<Reservation[]> {
+        return this.request<Reservation[]>('/api/reservations/me', {
+            headers: { 'X-Customer-Id': customerId },
+        })
+    }
+
+    async getEventReservations(eventId: string): Promise<Reservation[]> {
+        return this.request<Reservation[]>(`/api/reservations/event/${eventId}`)
+    }
+
+    async cancelReservation(id: string): Promise<Reservation> {
+        return this.request<Reservation>(`/api/reservations/${id}/cancel`, { method: 'POST' })
+    }
+
+    async convertReservation(id: string): Promise<Reservation> {
+        return this.request<Reservation>(`/api/reservations/${id}/convert`, { method: 'POST' })
     }
 }
 

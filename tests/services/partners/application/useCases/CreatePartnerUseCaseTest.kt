@@ -8,11 +8,13 @@ import partners.application.dto.CreatePartnerRequest
 import partners.application.useCases.CreatePartnerUseCase
 import partners.domain.DocumentType
 import partners.domain.PartnerStatus
+import partners.mocks.MockUserGateway
 
 class CreatePartnerUseCaseTest {
 
         private lateinit var partnerStore: InMemoryPartnerStore
         private lateinit var unitOfWork: UnitOfWorkAdapter
+        private lateinit var userGateway: MockUserGateway
         private lateinit var createPartnerUseCase: CreatePartnerUseCase
 
         @BeforeEach
@@ -20,7 +22,8 @@ class CreatePartnerUseCaseTest {
                 partnerStore = InMemoryPartnerStore()
                 unitOfWork =
                         UnitOfWorkAdapter(partnerStore.repository, partnerStore.transactionManager)
-                createPartnerUseCase = CreatePartnerUseCase(unitOfWork)
+                userGateway = MockUserGateway()
+                createPartnerUseCase = CreatePartnerUseCase(unitOfWork, userGateway)
         }
 
         @Test
@@ -36,8 +39,8 @@ class CreatePartnerUseCaseTest {
                                 phone = "11999999999"
                         )
 
-                // Act
-                val partnerId = createPartnerUseCase.execute(userId = 1L, request = request)
+                // Act - userId agora é obtido automaticamente pelo email via userGateway
+                val partnerId = createPartnerUseCase.execute(request)
 
                 // Assert
                 assertNotNull(partnerId)
@@ -48,7 +51,7 @@ class CreatePartnerUseCaseTest {
                 assertEquals("11222333000181", partner?.document?.value)
                 assertEquals(DocumentType.CNPJ, partner?.documentType)
                 assertEquals(PartnerStatus.PENDING, partner?.status)
-                assertEquals(1L, partner?.userId)
+                assertEquals(1L, partner?.userId) // Mock retorna userId sequencial
         }
 
         @Test
@@ -65,7 +68,7 @@ class CreatePartnerUseCaseTest {
                         )
 
                 // Act
-                val partnerId = createPartnerUseCase.execute(userId = 2L, request = request)
+                val partnerId = createPartnerUseCase.execute(request)
 
                 // Assert
                 val partner = partnerStore.repository.getById(partnerId)
@@ -75,26 +78,27 @@ class CreatePartnerUseCaseTest {
         }
 
         @Test
-        fun `deve falhar quando usuário já possui parceiro`() = runTest {
-                // Arrange
+        fun `deve falhar quando usuário já possui parceiro - mesmo email`() = runTest {
+                // Arrange - Cria primeiro parceiro
                 val request1 =
                         CreatePartnerRequest(
                                 companyName = "Empresa 1",
                                 tradeName = null,
                                 document = "11222333000181",
                                 documentType = DocumentType.CNPJ,
-                                email = "empresa1@email.com",
+                                email = "mesma@email.com", // Mesmo email
                                 phone = "11999999999"
                         )
-                createPartnerUseCase.execute(userId = 1L, request = request1)
+                createPartnerUseCase.execute(request1)
 
+                // Tenta criar segundo parceiro com mesmo email (mesmo userId)
                 val request2 =
                         CreatePartnerRequest(
                                 companyName = "Empresa 2",
                                 tradeName = null,
                                 document = "61695227000193",
                                 documentType = DocumentType.CNPJ,
-                                email = "empresa2@email.com",
+                                email = "mesma@email.com", // Mesmo email = mesmo userId
                                 phone = "11888888888"
                         )
 
@@ -102,10 +106,7 @@ class CreatePartnerUseCaseTest {
                 val exception =
                         assertThrows(IllegalStateException::class.java) {
                                 kotlinx.coroutines.runBlocking {
-                                        createPartnerUseCase.execute(
-                                                userId = 1L,
-                                                request = request2
-                                        )
+                                        createPartnerUseCase.execute(request2)
                                 }
                         }
                 assertEquals("Usuário já possui um parceiro cadastrado", exception.message)
@@ -123,7 +124,7 @@ class CreatePartnerUseCaseTest {
                                 email = "empresa1@email.com",
                                 phone = "11999999999"
                         )
-                createPartnerUseCase.execute(userId = 1L, request = request1)
+                createPartnerUseCase.execute(request1)
 
                 val request2 =
                         CreatePartnerRequest(
@@ -131,7 +132,7 @@ class CreatePartnerUseCaseTest {
                                 tradeName = null,
                                 document = "33000167000101", // Mesmo documento
                                 documentType = DocumentType.CNPJ,
-                                email = "empresa2@email.com",
+                                email = "empresa2@email.com", // Email diferente
                                 phone = "11888888888"
                         )
 
@@ -139,10 +140,7 @@ class CreatePartnerUseCaseTest {
                 val exception =
                         assertThrows(IllegalStateException::class.java) {
                                 kotlinx.coroutines.runBlocking {
-                                        createPartnerUseCase.execute(
-                                                userId = 2L,
-                                                request = request2
-                                        )
+                                        createPartnerUseCase.execute(request2)
                                 }
                         }
                 assertEquals("Documento já cadastrado por outro parceiro", exception.message)

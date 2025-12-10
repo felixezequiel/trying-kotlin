@@ -63,10 +63,13 @@ class UsersRoutesTest {
         // Arrange
         val mockUsersClient = object : IUsersClient {
             override suspend fun registerUser(request: RegisterUserRequest): UserResponse {
-                return UserResponse(id = "123", name = request.name, email = request.email)
+                return UserResponse(id = 123L, name = request.name, email = request.email)
             }
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
@@ -80,7 +83,7 @@ class UsersRoutesTest {
         // Assert
         assertEquals(HttpStatusCode.Created, response.status)
         val userResponse = response.body<UserResponse>()
-        assertEquals("123", userResponse.id)
+        assertEquals(123L, userResponse.id)
         assertEquals("Alice", userResponse.name)
         assertEquals("alice@example.com", userResponse.email)
     }
@@ -94,6 +97,9 @@ class UsersRoutesTest {
             }
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
@@ -117,10 +123,13 @@ class UsersRoutesTest {
             }
             override suspend fun getUserByEmail(email: String): UserResponse? {
                 return if (email == "alice@example.com") {
-                    UserResponse(id = "123", name = "Alice", email = email)
+                    UserResponse(id = 123L, name = "Alice", email = email)
                 } else null
             }
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
@@ -143,6 +152,9 @@ class UsersRoutesTest {
             }
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
@@ -163,6 +175,9 @@ class UsersRoutesTest {
             }
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
@@ -184,9 +199,12 @@ class UsersRoutesTest {
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> {
                 return listOf(
-                    UserResponse(id = "1", name = "Alice", email = "alice@example.com"),
-                    UserResponse(id = "2", name = "Bob", email = "bob@example.com")
+                    UserResponse(id = 1L, name = "Alice", email = "alice@example.com"),
+                    UserResponse(id = 2L, name = "Bob", email = "bob@example.com")
                 )
+            }
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
             }
         }
         configureTestApplication(mockUsersClient)
@@ -210,6 +228,9 @@ class UsersRoutesTest {
             }
             override suspend fun getUserByEmail(email: String): UserResponse? = null
             override suspend fun getAllUsers(): List<UserResponse> = emptyList()
+            override suspend fun addRoleToUser(userId: Long, role: String): UserResponse {
+                throw NotImplementedError()
+            }
         }
         configureTestApplication(mockUsersClient)
         val client = createJsonClient()
