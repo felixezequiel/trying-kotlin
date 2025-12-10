@@ -5,7 +5,7 @@ import io.ktor.server.netty.Netty
 import shared.utils.EnvConfig
 
 fun main() {
-    val port = EnvConfig.getInt("RESERVATIONS_SERVICE_PORT", 8085)
+    val port = EnvConfig.getInt("RESERVATIONS_SERVICE_PORT", 8086)
 
     println("")
     println("========================================")

@@ -4,30 +4,110 @@ version: '3.8'
 # Uso: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
+  # UI - Next.js Frontend (Dev)
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - bff
+    volumes:
+      - ./ui/src:/app/src
+      - ./ui/public:/app/public
+    networks:
+      - myapp-network
+
+  # BFF (Dev)
   bff:
     build:
       context: .
       dockerfile: bff/Dockerfile.dev
-    volumes:
-      - ./bff:/app/bff
-      - ./shared:/app/shared
-      - gradle-cache:/root/.gradle
+    ports:
+      - "8080:8080"
     environment:
       - BFF_PORT=8080
       - USERS_SERVICE_URL=http://users-service:8081
-    command: gradle -t :bff:classes --continuous & gradle :bff:run
+      - EVENTS_SERVICE_URL=http://events-service:8082
+      - PARTNERS_SERVICE_URL=http://partners-service:8083
+      - TICKETS_SERVICE_URL=http://tickets-service:8084
+    depends_on:
+      - users-service
+      - events-service
+      - partners-service
+      - tickets-service
+    volumes:
+      - ./bff:/app/bff
+      - ./shared:/app/shared
+    networks:
+      - myapp-network
 
+  # Users Service (Dev)
   users-service:
     build:
       context: .
       dockerfile: services/users/Dockerfile.dev
+    ports:
+      - "8081:8081"
+    environment:
+      - USERS_SERVICE_PORT=8081
     volumes:
       - ./services/users:/app/services/users
       - ./shared:/app/shared
-      - gradle-cache:/root/.gradle
+    networks:
+      - myapp-network
+
+  # Events Service (Dev)
+  events-service:
+    build:
+      context: .
+      dockerfile: services/events/Dockerfile.dev
+    ports:
+      - "8082:8082"
     environment:
-      - USERS_SERVICE_PORT=8081
-    command: gradle -t :services:users:classes --continuous & gradle :services:users:run
+      - EVENTS_SERVICE_PORT=8082
+    volumes:
+      - ./services/events:/app/services/events
+      - ./shared:/app/shared
+    networks:
+      - myapp-network
+
+  # Partners Service (Dev)
+  partners-service:
+    build:
+      context: .
+      dockerfile: services/partners/Dockerfile.dev
+    ports:
+      - "8083:8083"
+    environment:
+      - PARTNERS_SERVICE_PORT=8083
+    volumes:
+      - ./services/partners:/app/services/partners
+      - ./shared:/app/shared
+    networks:
+      - myapp-network
+
+  # Tickets Service (Dev)
+  tickets-service:
+    build:
+      context: .
+      dockerfile: services/tickets/Dockerfile.dev
+    ports:
+      - "8084:8084"
+    environment:
+      - TICKETS_SERVICE_PORT=8084
+    volumes:
+      - ./services/tickets:/app/services/tickets
+      - ./shared:/app/shared
+    networks:
+      - myapp-network
+
+networks:
+  myapp-network:
+    driver: bridge
 
 volumes:
   gradle-cache:

@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  # UI - Next.js Frontend
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    depends_on:
+      - bff
+    networks:
+      - myapp-network
+
+  # BFF - Backend for Frontend
   bff:
     build:
       context: .
@@ -10,11 +25,22 @@ services:
     environment:
       - BFF_PORT=8080
       - USERS_SERVICE_URL=http://users-service:8081
+      - EVENTS_SERVICE_URL=http://events-service:8082
+      - PARTNERS_SERVICE_URL=http://partners-service:8083
+      - TICKETS_SERVICE_URL=http://tickets-service:8084
+      - ORDERS_SERVICE_URL=http://orders-service:8085
+      - RESERVATIONS_SERVICE_URL=http://reservations-service:8086
     depends_on:
       - users-service
+      - events-service
+      - partners-service
+      - tickets-service
+      - orders-service
+      - reservations-service
     networks:
       - myapp-network
 
+  # Users Service
   users-service:
     build:
       context: .
@@ -23,6 +49,72 @@ services:
       - "8081:8081"
     environment:
       - USERS_SERVICE_PORT=8081
+    networks:
+      - myapp-network
+
+  # Events Service
+  events-service:
+    build:
+      context: .
+      dockerfile: services/events/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - EVENTS_SERVICE_PORT=8082
+    networks:
+      - myapp-network
+
+  # Partners Service
+  partners-service:
+    build:
+      context: .
+      dockerfile: services/partners/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - PARTNERS_SERVICE_PORT=8083
+    networks:
+      - myapp-network
+
+  # Tickets Service
+  tickets-service:
+    build:
+      context: .
+      dockerfile: services/tickets/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - TICKETS_SERVICE_PORT=8084
+    networks:
+      - myapp-network
+
+  # Orders Service
+  orders-service:
+    build:
+      context: .
+      dockerfile: services/orders/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - ORDERS_SERVICE_PORT=8085
+      - RESERVATIONS_SERVICE_URL=http://reservations-service:8086
+    depends_on:
+      - reservations-service
+    networks:
+      - myapp-network
+
+  # Reservations Service
+  reservations-service:
+    build:
+      context: .
+      dockerfile: services/reservations/Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      - RESERVATIONS_SERVICE_PORT=8086
+      - TICKETS_SERVICE_URL=http://tickets-service:8084
+    depends_on:
+      - tickets-service
     networks:
       - myapp-network
 
