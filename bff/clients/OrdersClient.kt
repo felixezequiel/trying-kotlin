@@ -99,7 +99,7 @@ class OrdersClient(private val httpClient: HttpClient, private val baseUrl: Stri
 }
 
 // DTOs
-@Serializable data class CreateOrderRequest(val customerId: String, val reservationId: String)
+@Serializable data class CreateOrderRequest(val reservationId: String)
 
 @Serializable
 data class ProcessPaymentRequest(

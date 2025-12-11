@@ -79,7 +79,6 @@ class ReservationsClient(private val httpClient: HttpClient, private val baseUrl
 // DTOs
 @Serializable
 data class CreateReservationRequest(
-        val customerId: String,
         val eventId: String,
         val items: List<ReservationItemRequest>
 )

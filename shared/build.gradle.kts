@@ -3,6 +3,7 @@
 sourceSets {
     main {
         kotlin.srcDirs(".")
+        kotlin.exclude("bin/**")
     }
     test {
         kotlin.srcDirs("../tests/shared")

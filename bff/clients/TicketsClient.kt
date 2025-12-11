@@ -9,7 +9,7 @@ import shared.exceptions.ServiceException
 
 /** Interface para o cliente de Tickets */
 interface ITicketsClient {
-    suspend fun createTicketType(request: CreateTicketTypeRequest): TicketTypeResponse
+    suspend fun createTicketType(partnerId: String, request: CreateTicketTypeRequest): TicketTypeResponse
     suspend fun getTicketTypeById(id: String): TicketTypeResponse?
     suspend fun listTicketTypesByEvent(eventId: String): List<TicketTypeResponse>
     suspend fun updateTicketType(id: String, request: UpdateTicketTypeRequest): TicketTypeResponse
@@ -22,14 +22,16 @@ interface ITicketsClient {
 class TicketsClient(private val httpClient: HttpClient, private val baseUrl: String) :
         ITicketsClient {
 
-    override suspend fun createTicketType(request: CreateTicketTypeRequest): TicketTypeResponse {
+    override suspend fun createTicketType(partnerId: String, request: CreateTicketTypeRequest): TicketTypeResponse {
         val response =
                 httpClient.post("$baseUrl/ticket-types") {
                     contentType(ContentType.Application.Json)
+                    header("X-Partner-Id", partnerId)
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {
-            throw ServiceException("Failed to create ticket type", response.status.value)
+            val errorBody = response.body<String>()
+            throw ServiceException("Failed to create ticket type: $errorBody", response.status.value)
         }
         return response.body()
     }
@@ -103,16 +105,22 @@ data class CreateTicketTypeRequest(
         val eventId: String,
         val name: String,
         val description: String,
-        val price: Double,
-        val quantity: Int
+        val price: String, // BigDecimal como String para serialização
+        val totalQuantity: Int,
+        val maxPerCustomer: Int,
+        val salesStartDate: String? = null, // ISO-8601 format
+        val salesEndDate: String? = null // ISO-8601 format
 )
 
 @Serializable
 data class UpdateTicketTypeRequest(
         val name: String? = null,
         val description: String? = null,
-        val price: Double? = null,
-        val quantity: Int? = null
+        val price: String? = null,
+        val totalQuantity: Int? = null,
+        val maxPerCustomer: Int? = null,
+        val salesStartDate: String? = null,
+        val salesEndDate: String? = null
 )
 
 @Serializable
@@ -121,10 +129,14 @@ data class TicketTypeResponse(
         val eventId: String,
         val name: String,
         val description: String,
-        val price: Double,
-        val quantity: Int,
+        val price: String,
+        val totalQuantity: Int,
         val availableQuantity: Int,
-        val active: Boolean
+        val maxPerCustomer: Int,
+        val salesStartDate: String? = null,
+        val salesEndDate: String? = null,
+        val status: String,
+        val createdAt: String
 )
 
 @Serializable data class ReserveTicketsRequest(val ticketTypeId: String, val quantity: Int)

@@ -7,6 +7,13 @@ import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import shared.exceptions.ServiceException
 
+/** Document types matching service enum */
+@Serializable
+enum class DocumentType {
+    CPF,
+    CNPJ
+}
+
 /** Interface para o cliente de Partners */
 interface IPartnersClient {
     suspend fun createPartner(request: CreatePartnerRequest): PartnerResponse
@@ -113,7 +120,7 @@ data class CreatePartnerRequest(
         val companyName: String,
         val tradeName: String? = null,
         val document: String,
-        val documentType: String,
+        val documentType: DocumentType,
         val email: String,
         val phone: String
 )
@@ -133,7 +140,7 @@ data class PartnerResponse(
         val companyName: String,
         val tradeName: String? = null,
         val document: String,
-        val documentType: String,
+        val documentType: DocumentType,
         val email: String,
         val phone: String,
         val status: String,

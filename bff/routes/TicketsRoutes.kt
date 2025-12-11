@@ -14,8 +14,14 @@ fun Route.ticketsRoutes(ticketsClient: ITicketsClient) {
 
         // POST /api/ticket-types - Criar tipo de ingresso
         post {
+            val partnerId =
+                    call.request.headers["X-Partner-Id"]
+                            ?: return@post call.respond(
+                                    HttpStatusCode.BadRequest,
+                                    mapOf("error" to "Partner ID is required")
+                            )
             val request = call.receive<CreateTicketTypeRequest>()
-            val ticketType = ticketsClient.createTicketType(request)
+            val ticketType = ticketsClient.createTicketType(partnerId, request)
             call.respond(HttpStatusCode.Created, ticketType)
         }
 
