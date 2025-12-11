@@ -86,9 +86,9 @@ export default function EventsPage() {
         fetchPartners()
     }, [])
 
-    const handlePublish = async (id: string) => {
+    const handlePublish = async (event: Event) => {
         try {
-            await api.publishEvent(id)
+            await api.publishEvent(event.partnerId, event.id)
             toast({ title: 'Event published successfully' })
             fetchEvents()
         } catch (error) {
@@ -96,9 +96,9 @@ export default function EventsPage() {
         }
     }
 
-    const handleCancel = async (id: string) => {
+    const handleCancel = async (event: Event) => {
         try {
-            await api.cancelEvent(id)
+            await api.cancelEvent(event.partnerId, event.id)
             toast({ title: 'Event cancelled' })
             fetchEvents()
         } catch (error) {
@@ -300,7 +300,7 @@ export default function EventsPage() {
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Edit Event
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handlePublish(event.id)}>
+                                                    <DropdownMenuItem onClick={() => handlePublish(event)}>
                                                         Publish
                                                     </DropdownMenuItem>
                                                 </>
@@ -308,7 +308,7 @@ export default function EventsPage() {
                                             {event.status === 'PUBLISHED' && (
                                                 <DropdownMenuItem
                                                     className="text-destructive"
-                                                    onClick={() => handleCancel(event.id)}
+                                                    onClick={() => handleCancel(event)}
                                                 >
                                                     Cancel Event
                                                 </DropdownMenuItem>

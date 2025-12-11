@@ -38,6 +38,25 @@ fun Route.eventsRoutes(eventsClient: IEventsClient) {
                         call.respond(events)
                 }
 
+                // GET /api/events/{id} - Buscar evento por ID
+                get("/{id}") {
+                        val id = call.parameters["id"]
+                                ?: return@get call.respond(
+                                        HttpStatusCode.BadRequest,
+                                        mapOf("error" to "Event ID is required")
+                                )
+                        try {
+                                val event = eventsClient.getEventById(id)
+                                if (event == null) {
+                                        call.respond(HttpStatusCode.NotFound, mapOf("error" to "Event not found with id: $id"))
+                                } else {
+                                        call.respond(event)
+                                }
+                        } catch (e: Exception) {
+                                call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch event: ${e.message}"))
+                        }
+                }
+
                 // GET /api/events/partner/{partnerId} - Listar eventos do partner
                 get("/partner/{partnerId}") {
                         val partnerId =
