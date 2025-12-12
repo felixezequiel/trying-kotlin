@@ -9,11 +9,19 @@ import shared.exceptions.ServiceException
 
 /** Interface para o cliente de Tickets */
 interface ITicketsClient {
-    suspend fun createTicketType(partnerId: String, request: CreateTicketTypeRequest): TicketTypeResponse
+    suspend fun createTicketType(
+            partnerId: String,
+            request: CreateTicketTypeRequest
+    ): TicketTypeResponse
     suspend fun getTicketTypeById(id: String): TicketTypeResponse?
     suspend fun listTicketTypesByEvent(eventId: String): List<TicketTypeResponse>
-    suspend fun updateTicketType(id: String, request: UpdateTicketTypeRequest): TicketTypeResponse
-    suspend fun deactivateTicketType(id: String)
+    suspend fun updateTicketType(
+            partnerId: String,
+            id: String,
+            request: UpdateTicketTypeRequest
+    ): TicketTypeResponse
+    suspend fun deactivateTicketType(partnerId: String, id: String)
+    suspend fun activateTicketType(partnerId: String, id: String): TicketTypeResponse
     suspend fun reserveTickets(request: ReserveTicketsRequest): ReserveTicketsResponse
     suspend fun releaseTickets(request: ReleaseTicketsRequest)
 }
@@ -22,7 +30,10 @@ interface ITicketsClient {
 class TicketsClient(private val httpClient: HttpClient, private val baseUrl: String) :
         ITicketsClient {
 
-    override suspend fun createTicketType(partnerId: String, request: CreateTicketTypeRequest): TicketTypeResponse {
+    override suspend fun createTicketType(
+            partnerId: String,
+            request: CreateTicketTypeRequest
+    ): TicketTypeResponse {
         val response =
                 httpClient.post("$baseUrl/ticket-types") {
                     contentType(ContentType.Application.Json)
@@ -31,7 +42,10 @@ class TicketsClient(private val httpClient: HttpClient, private val baseUrl: Str
                 }
         if (!response.status.isSuccess()) {
             val errorBody = response.body<String>()
-            throw ServiceException("Failed to create ticket type: $errorBody", response.status.value)
+            throw ServiceException(
+                    "Failed to create ticket type: $errorBody",
+                    response.status.value
+            )
         }
         return response.body()
     }
@@ -54,12 +68,14 @@ class TicketsClient(private val httpClient: HttpClient, private val baseUrl: Str
     }
 
     override suspend fun updateTicketType(
+            partnerId: String,
             id: String,
             request: UpdateTicketTypeRequest
     ): TicketTypeResponse {
         val response =
                 httpClient.put("$baseUrl/ticket-types/$id") {
                     contentType(ContentType.Application.Json)
+                    header("X-Partner-Id", partnerId)
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {
@@ -68,11 +84,24 @@ class TicketsClient(private val httpClient: HttpClient, private val baseUrl: Str
         return response.body()
     }
 
-    override suspend fun deactivateTicketType(id: String) {
-        val response = httpClient.delete("$baseUrl/ticket-types/$id")
+    override suspend fun deactivateTicketType(partnerId: String, id: String) {
+        val response =
+                httpClient.delete("$baseUrl/ticket-types/$id") { header("X-Partner-Id", partnerId) }
         if (!response.status.isSuccess()) {
             throw ServiceException("Failed to deactivate ticket type", response.status.value)
         }
+    }
+
+    override suspend fun activateTicketType(partnerId: String, id: String): TicketTypeResponse {
+        val response =
+                httpClient.post("$baseUrl/ticket-types/$id/activate") {
+                    contentType(ContentType.Application.Json)
+                    header("X-Partner-Id", partnerId)
+                }
+        if (!response.status.isSuccess()) {
+            throw ServiceException("Failed to activate ticket type", response.status.value)
+        }
+        return response.body()
     }
 
     override suspend fun reserveTickets(request: ReserveTicketsRequest): ReserveTicketsResponse {

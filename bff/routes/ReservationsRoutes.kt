@@ -14,8 +14,14 @@ fun Route.reservationsRoutes(reservationsClient: IReservationsClient) {
 
         // POST /api/reservations - Criar reserva
         post {
+            val customerId =
+                    call.request.headers["X-Customer-Id"]
+                            ?: return@post call.respond(
+                                    HttpStatusCode.BadRequest,
+                                    mapOf("error" to "Customer ID header is required")
+                            )
             val request = call.receive<CreateReservationRequest>()
-            val reservation = reservationsClient.createReservation(request)
+            val reservation = reservationsClient.createReservation(request, customerId)
             call.respond(HttpStatusCode.Created, reservation)
         }
 

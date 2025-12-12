@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Ticket, DollarSign, Package, TrendingUp, RefreshCw, Eye } from 'lucide-react'
+import { Ticket, DollarSign, Package, TrendingUp, RefreshCw, Eye, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +25,26 @@ export default function TicketsPage() {
     const router = useRouter()
     const [tickets, setTickets] = useState<TicketTypeWithEvent[]>([])
     const [loading, setLoading] = useState(true)
+    const [reservingTicket, setReservingTicket] = useState<string | null>(null)
     const { toast } = useToast()
+
+    const handleReserveTicket = async (ticketId: string, quantity: number) => {
+        if (quantity <= 0) {
+            toast({ title: 'Please enter a valid quantity', variant: 'destructive' })
+            return
+        }
+
+        setReservingTicket(ticketId)
+        try {
+            await api.reserveTickets({ ticketTypeId: ticketId, quantity })
+            toast({ title: 'Tickets reserved successfully' })
+            fetchTickets() // Refresh to update available quantities
+        } catch (error) {
+            toast({ title: 'Failed to reserve tickets', variant: 'destructive' })
+        } finally {
+            setReservingTicket(null)
+        }
+    }
 
     const fetchTickets = async () => {
         try {
@@ -59,8 +78,8 @@ export default function TicketsPage() {
         fetchTickets()
     }, [])
 
-    const totalRevenue = tickets.reduce((acc, t) => acc + (t.quantity - t.availableQuantity) * t.price, 0)
-    const totalSold = tickets.reduce((acc, t) => acc + (t.quantity - t.availableQuantity), 0)
+    const totalRevenue = tickets.reduce((acc, t) => acc + (t.totalQuantity - t.availableQuantity) * parseFloat(t.price), 0)
+    const totalSold = tickets.reduce((acc, t) => acc + (t.totalQuantity - t.availableQuantity), 0)
     const totalAvailable = tickets.reduce((acc, t) => acc + t.availableQuantity, 0)
 
     return (
@@ -177,10 +196,10 @@ export default function TicketsPage() {
                                         <TableCell className="font-medium">{ticket.eventName}</TableCell>
                                         <TableCell>{ticket.name}</TableCell>
                                         <TableCell className="text-right">
-                                            ${ticket.price.toFixed(2)}
+                                            ${parseFloat(ticket.price).toFixed(2)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {ticket.quantity - ticket.availableQuantity}
+                                            {ticket.totalQuantity - ticket.availableQuantity}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
@@ -189,25 +208,40 @@ export default function TicketsPage() {
                                                     <div
                                                         className="h-2 rounded-full bg-primary"
                                                         style={{
-                                                            width: `${ticket.quantity > 0 ? (ticket.availableQuantity / ticket.quantity) * 100 : 0}%`,
+                                                            width: `${ticket.totalQuantity > 0 ? (ticket.availableQuantity / ticket.totalQuantity) * 100 : 0}%`,
                                                         }}
                                                     />
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={ticket.active ? 'success' : 'secondary'}>
-                                                {ticket.active ? 'Active' : 'Inactive'}
+                                            <Badge variant={ticket.status === "ACTIVE" ? 'success' : 'secondary'}>
+                                                {ticket.status === "ACTIVE" ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => router.push(`/events/${ticket.eventId}`)}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
+                                            <div className="flex gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => router.push(`/events/${ticket.eventId}`)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    onClick={() => handleReserveTicket(ticket.id, 1)}
+                                                    disabled={reservingTicket === ticket.id || ticket.status !== "ACTIVE" || ticket.availableQuantity === 0}
+                                                >
+                                                    {reservingTicket === ticket.id ? (
+                                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <ShoppingCart className="h-4 w-4" />
+                                                    )}
+                                                    Reserve
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}

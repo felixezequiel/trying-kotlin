@@ -13,6 +13,7 @@ data class ReservationResponse(
         val items: List<ReservationItemResponse>,
         val totalAmount: String,
         val status: ReservationStatus,
+        val expiresAt: String,
         val createdAt: String,
         val cancelledAt: String?,
         val cancelledBy: String?,
@@ -23,6 +24,10 @@ data class ReservationResponse(
 ) {
     companion object {
         fun fromDomain(reservation: Reservation): ReservationResponse {
+            // Calculate expiresAt as 15 minutes after createdAt
+            val createdAt = java.time.Instant.parse(reservation.createdAt.toString())
+            val expiresAt = createdAt.plus(java.time.Duration.ofMinutes(15))
+
             return ReservationResponse(
                     id = reservation.id.toString(),
                     customerId = reservation.customerId.toString(),
@@ -30,6 +35,7 @@ data class ReservationResponse(
                     items = reservation.items.map { ReservationItemResponse.fromDomain(it) },
                     totalAmount = reservation.totalAmount.value.toString(),
                     status = reservation.status,
+                    expiresAt = expiresAt.toString(),
                     createdAt = reservation.createdAt.toString(),
                     cancelledAt = reservation.cancelledAt?.toString(),
                     cancelledBy = reservation.cancelledBy?.toString(),

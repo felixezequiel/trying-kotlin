@@ -19,6 +19,7 @@ import tickets.adapters.inbound.TicketTypeController
 import tickets.adapters.outbound.InMemoryTicketStore
 import tickets.adapters.outbound.UnitOfWorkAdapter
 import tickets.application.dto.ErrorResponse
+import tickets.application.useCases.ActivateTicketTypeUseCase
 import tickets.application.useCases.CreateTicketTypeUseCase
 import tickets.application.useCases.DeactivateTicketTypeUseCase
 import tickets.application.useCases.GetTicketTypeUseCase
@@ -56,6 +57,7 @@ fun Application.configureRouting() {
     val createTicketTypeUseCase = CreateTicketTypeUseCase(unitOfWork)
     val updateTicketTypeUseCase = UpdateTicketTypeUseCase(unitOfWork)
     val deactivateTicketTypeUseCase = DeactivateTicketTypeUseCase(unitOfWork)
+    val activateTicketTypeUseCase = ActivateTicketTypeUseCase(unitOfWork)
     val getTicketTypeUseCase = GetTicketTypeUseCase(unitOfWork)
     val listTicketTypesByEventUseCase = ListTicketTypesByEventUseCase(unitOfWork)
     val reserveTicketsUseCase = ReserveTicketsUseCase(unitOfWork)
@@ -67,6 +69,7 @@ fun Application.configureRouting() {
                     createTicketTypeUseCase,
                     updateTicketTypeUseCase,
                     deactivateTicketTypeUseCase,
+                    activateTicketTypeUseCase,
                     getTicketTypeUseCase,
                     listTicketTypesByEventUseCase,
                     reserveTicketsUseCase,
@@ -98,6 +101,9 @@ fun Application.configureRouting() {
 
                 // DELETE /ticket-types/{id} - Desativa tipo (PARTNER / ADMIN)
                 delete { ticketTypeController.deactivateTicketType(call) }
+
+                // POST /ticket-types/{id}/activate - Ativa tipo (PARTNER / ADMIN)
+                post("/activate") { ticketTypeController.activateTicketType(call) }
             }
         }
     }

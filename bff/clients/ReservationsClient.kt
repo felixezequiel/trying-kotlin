@@ -9,7 +9,7 @@ import shared.exceptions.ServiceException
 
 /** Interface para o cliente de Reservations */
 interface IReservationsClient {
-    suspend fun createReservation(request: CreateReservationRequest): ReservationResponse
+    suspend fun createReservation(request: CreateReservationRequest, customerId: String): ReservationResponse
     suspend fun getReservationById(id: String): ReservationResponse?
     suspend fun listMyReservations(customerId: String): List<ReservationResponse>
     suspend fun listEventReservations(eventId: String): List<ReservationResponse>
@@ -21,10 +21,11 @@ interface IReservationsClient {
 class ReservationsClient(private val httpClient: HttpClient, private val baseUrl: String) :
         IReservationsClient {
 
-    override suspend fun createReservation(request: CreateReservationRequest): ReservationResponse {
+    override suspend fun createReservation(request: CreateReservationRequest, customerId: String): ReservationResponse {
         val response =
                 httpClient.post("$baseUrl/reservations") {
                     contentType(ContentType.Application.Json)
+                    header("X-Customer-Id", customerId)
                     setBody(request)
                 }
         if (!response.status.isSuccess()) {

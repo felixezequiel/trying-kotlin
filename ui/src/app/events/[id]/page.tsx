@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, MapPin, Plus, Pencil, Trash2, Ticket } from 'lucide-react'
+import { ArrowLeft, Calendar, MapPin, Plus, Pencil, Power, Trash2, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +62,7 @@ export default function EventDetailPage() {
         description: '',
         price: 0,
         quantity: 0,
+        maxPerCustomer: 10,
     })
 
     const fetchEvent = async () => {
@@ -142,10 +143,16 @@ export default function EventDetailPage() {
 
     const handleCreateTicketType = async () => {
         try {
-            await api.createTicketType({ ...ticketForm, eventId })
+            await api.createTicketType({
+                ...ticketForm,
+                eventId,
+                price: ticketForm.price.toString(),
+                totalQuantity: ticketForm.quantity,
+                maxPerCustomer: ticketForm.maxPerCustomer
+            })
             toast({ title: 'Ticket type created successfully' })
             setIsTicketDialogOpen(false)
-            setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0 })
+            setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0, maxPerCustomer: 10 })
             fetchTicketTypes()
         } catch (error) {
             toast({ title: 'Failed to create ticket type', variant: 'destructive' })
@@ -155,11 +162,11 @@ export default function EventDetailPage() {
     const handleUpdateTicketType = async () => {
         if (!editingTicket) return
         try {
-            await api.updateTicketType(editingTicket.id, {
+            await api.updateTicketType(event.partnerId, editingTicket.id, {
                 name: ticketForm.name,
                 description: ticketForm.description,
-                price: ticketForm.price,
-                quantity: ticketForm.quantity,
+                price: ticketForm.price.toString(),
+                totalQuantity: ticketForm.quantity,
             })
             toast({ title: 'Ticket type updated successfully' })
             setIsTicketDialogOpen(false)
@@ -173,11 +180,21 @@ export default function EventDetailPage() {
 
     const handleDeactivateTicketType = async (id: string) => {
         try {
-            await api.deactivateTicketType(id)
+            await api.deactivateTicketType(event.partnerId, id)
             toast({ title: 'Ticket type deactivated' })
             fetchTicketTypes()
         } catch (error) {
             toast({ title: 'Failed to deactivate ticket type', variant: 'destructive' })
+        }
+    }
+
+    const handleActivateTicketType = async (id: string) => {
+        try {
+            await api.activateTicketType(event.partnerId, id)
+            toast({ title: 'Ticket type activated' })
+            fetchTicketTypes()
+        } catch (error) {
+            toast({ title: 'Failed to activate ticket type', variant: 'destructive' })
         }
     }
 
@@ -188,14 +205,14 @@ export default function EventDetailPage() {
             name: ticket.name,
             description: ticket.description,
             price: ticket.price,
-            quantity: ticket.quantity,
+            quantity: ticket.totalQuantity,
         })
         setIsTicketDialogOpen(true)
     }
 
     const openCreateTicket = () => {
         setEditingTicket(null)
-        setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0 })
+        setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0, maxPerCustomer: 10 })
         setIsTicketDialogOpen(true)
     }
 
@@ -319,7 +336,7 @@ export default function EventDetailPage() {
                         <CardTitle>Ticket Types</CardTitle>
                         <CardDescription>Manage ticket types for this event</CardDescription>
                     </div>
-                    {event.status === 'DRAFT' && (
+                    {(event.status === 'DRAFT' || event.status === 'PUBLISHED') && (
                         <Button onClick={openCreateTicket}>
                             <Plus className="mr-2 h-4 w-4" />
                             Add Ticket Type
@@ -356,15 +373,15 @@ export default function EventDetailPage() {
                                             {ticket.description}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            ${ticket.price.toFixed(2)}
+                                            ${parseFloat(ticket.price).toFixed(2)}
                                         </TableCell>
-                                        <TableCell className="text-right">{ticket.quantity}</TableCell>
+                                        <TableCell className="text-right">{ticket.totalQuantity}</TableCell>
                                         <TableCell className="text-right">
                                             {ticket.availableQuantity}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={ticket.active ? 'success' : 'secondary'}>
-                                                {ticket.active ? 'Active' : 'Inactive'}
+                                            <Badge variant={ticket.status === "ACTIVE" ? 'success' : 'secondary'}>
+                                                {ticket.status === "ACTIVE" ? 'Active' : 'Inactive'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
@@ -376,13 +393,22 @@ export default function EventDetailPage() {
                                                 >
                                                     <Pencil className="h-4 w-4" />
                                                 </Button>
-                                                {ticket.active && (
+                                                {ticket.status === "ACTIVE" && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
                                                         onClick={() => handleDeactivateTicketType(ticket.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                )}
+                                                {ticket.status !== "ACTIVE" && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleActivateTicketType(ticket.id)}
+                                                    >
+                                                        <Power className="h-4 w-4 text-green-600" />
                                                     </Button>
                                                 )}
                                             </div>

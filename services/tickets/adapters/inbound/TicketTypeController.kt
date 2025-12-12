@@ -11,6 +11,7 @@ import tickets.application.dto.ReleaseTicketsRequest
 import tickets.application.dto.ReserveTicketsRequest
 import tickets.application.dto.TicketTypeResponse
 import tickets.application.dto.UpdateTicketTypeRequest
+import tickets.application.useCases.ActivateTicketTypeUseCase
 import tickets.application.useCases.CreateTicketTypeUseCase
 import tickets.application.useCases.DeactivateTicketTypeUseCase
 import tickets.application.useCases.GetTicketTypeUseCase
@@ -23,6 +24,7 @@ class TicketTypeController(
         private val createTicketTypeUseCase: CreateTicketTypeUseCase,
         private val updateTicketTypeUseCase: UpdateTicketTypeUseCase,
         private val deactivateTicketTypeUseCase: DeactivateTicketTypeUseCase,
+        private val activateTicketTypeUseCase: ActivateTicketTypeUseCase,
         private val getTicketTypeUseCase: GetTicketTypeUseCase,
         private val listTicketTypesByEventUseCase: ListTicketTypesByEventUseCase,
         private val reserveTicketsUseCase: ReserveTicketsUseCase,
@@ -247,6 +249,51 @@ class TicketTypeController(
             call.respond(
                     HttpStatusCode.Conflict,
                     ErrorResponse(e.message ?: "Não foi possível liberar")
+            )
+        } catch (e: Exception) {
+            call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse("Erro interno do servidor: ${e.message}")
+            )
+        }
+    }
+
+    // POST /ticket-types/{id}/activate - Ativa tipo (PARTNER / ADMIN)
+    suspend fun activateTicketType(call: ApplicationCall) {
+        try {
+            val partnerIdStr = call.request.headers["X-Partner-Id"]
+            val isAdmin = call.request.headers["X-Is-Admin"]?.toBoolean() ?: false
+
+            if (!isAdmin && partnerIdStr == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Não autenticado"))
+                return
+            }
+
+            val id = call.parameters["id"]
+            if (id == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID é obrigatório"))
+                return
+            }
+
+            val ticketTypeId =
+                    try {
+                        UUID.fromString(id)
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("ID inválido"))
+                        return
+                    }
+
+            val activatedTicketType = activateTicketTypeUseCase.execute(ticketTypeId)
+            call.respond(HttpStatusCode.OK, TicketTypeResponse.fromDomain(activatedTicketType))
+        } catch (e: IllegalArgumentException) {
+            call.respond(
+                    HttpStatusCode.NotFound,
+                    ErrorResponse(e.message ?: "Tipo de ingresso não encontrado")
+            )
+        } catch (e: IllegalStateException) {
+            call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse(e.message ?: "Não foi possível ativar")
             )
         } catch (e: Exception) {
             call.respond(

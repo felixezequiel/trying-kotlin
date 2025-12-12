@@ -217,7 +217,7 @@ export default function EventsPage() {
                                     <Label htmlFor="startDate">Start Date *</Label>
                                     <Input
                                         id="startDate"
-                                        type="date"
+                                        type="datetime-local"
                                         value={newEvent.startDate}
                                         onChange={(e) => setNewEvent({ ...newEvent, startDate: e.target.value })}
                                     />
@@ -226,7 +226,7 @@ export default function EventsPage() {
                                     <Label htmlFor="endDate">End Date *</Label>
                                     <Input
                                         id="endDate"
-                                        type="date"
+                                        type="datetime-local"
                                         value={newEvent.endDate}
                                         onChange={(e) => setNewEvent({ ...newEvent, endDate: e.target.value })}
                                     />

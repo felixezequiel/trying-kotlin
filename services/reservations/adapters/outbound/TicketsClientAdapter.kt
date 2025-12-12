@@ -39,17 +39,20 @@ class TicketsClientAdapter : ITicketsClient {
 
     override fun reserve(ticketTypeId: UUID, quantity: Quantity): TicketTypeInfo {
         return runBlocking {
-            val response =
+            val reserveResponse =
                     client.post("$ticketsServiceUrl/ticket-types/reserve") {
                         contentType(ContentType.Application.Json)
                         setBody(ReserveTicketsRequest(ticketTypeId.toString(), quantity.value))
                     }
 
-            if (response.status.value != 200) {
+            if (reserveResponse.status.value != 200) {
                 throw IllegalStateException("Não foi possível reservar ingressos")
             }
 
-            val ticketTypeResponse = response.body<TicketTypeResponse>()
+            val reserveResult = reserveResponse.body<ReserveTicketsResponse>()
+            
+            // Fetch full ticket type info after successful reservation
+            val ticketTypeResponse = client.get("$ticketsServiceUrl/ticket-types/$ticketTypeId").body<TicketTypeResponse>()
             ticketTypeResponse.toTicketTypeInfo()
         }
     }
@@ -96,13 +99,26 @@ class TicketsClientAdapter : ITicketsClient {
     private data class ReleaseTicketsRequest(val ticketTypeId: String, val quantity: Int)
 
     @Serializable
+    private data class ReserveTicketsResponse(
+        val success: Boolean,
+        val ticketTypeId: String,
+        val reservedQuantity: Int,
+        val unitPrice: String,
+        val remainingQuantity: Int
+    )
+
+    @Serializable
     private data class TicketTypeResponse(
             val id: String,
             val eventId: String,
             val name: String,
             val price: String,
+            val totalQuantity: Int,
             val availableQuantity: Int,
-            val maxPerCustomer: Int
+            val maxPerCustomer: Int,
+            val status: String,
+            val salesStartDate: String? = null,
+            val salesEndDate: String? = null
     ) {
         fun toTicketTypeInfo(): TicketTypeInfo {
             return TicketTypeInfo(

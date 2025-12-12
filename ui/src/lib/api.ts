@@ -52,10 +52,10 @@ export interface TicketType {
     eventId: string
     name: string
     description: string
-    price: number
-    quantity: number
+    price: string
+    totalQuantity: number
     availableQuantity: number
-    active: boolean
+    status: string
 }
 
 export interface Order {
@@ -145,8 +145,11 @@ export interface CreateTicketTypeRequest {
     eventId: string
     name: string
     description: string
-    price: number
-    quantity: number
+    price: string
+    totalQuantity: number
+    maxPerCustomer: number
+    salesStartDate?: string
+    salesEndDate?: string
 }
 
 export interface UpdateTicketTypeRequest {
@@ -160,6 +163,18 @@ export interface CreateReservationRequest {
     customerId: string
     eventId: string
     items: { ticketTypeId: string; quantity: number }[]
+}
+
+export interface ReserveTicketsRequest {
+    ticketTypeId: string
+    quantity: number
+}
+
+export interface ReserveTicketsResponse {
+    reservationId: string
+    ticketTypeId: string
+    quantity: number
+    expiresAt: string
 }
 
 export interface CreateOrderRequest {
@@ -322,15 +337,33 @@ class ApiClient {
         })
     }
 
-    async updateTicketType(id: string, data: Partial<TicketType>): Promise<TicketType> {
+    async updateTicketType(partnerId: string, id: string, data: Partial<TicketType>): Promise<TicketType> {
         return this.request<TicketType>(`/api/ticket-types/${id}`, {
             method: 'PUT',
+            headers: { 'X-Partner-Id': partnerId },
             body: JSON.stringify(data),
         })
     }
 
-    async deactivateTicketType(id: string): Promise<void> {
-        await this.request(`/api/ticket-types/${id}`, { method: 'DELETE' })
+    async deactivateTicketType(partnerId: string, id: string): Promise<void> {
+        await this.request(`/api/ticket-types/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-Partner-Id': partnerId }
+        })
+    }
+
+    async activateTicketType(partnerId: string, id: string): Promise<TicketType> {
+        return this.request<TicketType>(`/api/ticket-types/${id}/activate`, {
+            method: 'POST',
+            headers: { 'X-Partner-Id': partnerId }
+        })
+    }
+
+    async reserveTickets(data: ReserveTicketsRequest): Promise<ReserveTicketsResponse> {
+        return this.request<ReserveTicketsResponse>('/api/ticket-types/reserve', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        })
     }
 
     // Orders
