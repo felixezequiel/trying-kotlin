@@ -61,7 +61,7 @@ export default function EventDetailPage() {
         name: '',
         description: '',
         price: 0,
-        quantity: 0,
+        totalQuantity: 0,
         maxPerCustomer: 10,
     })
 
@@ -143,16 +143,18 @@ export default function EventDetailPage() {
 
     const handleCreateTicketType = async () => {
         try {
-            await api.createTicketType({
+            await api.createTicketType(event.partnerId, {
                 ...ticketForm,
                 eventId,
                 price: ticketForm.price.toString(),
-                totalQuantity: ticketForm.quantity,
-                maxPerCustomer: ticketForm.maxPerCustomer
+                totalQuantity: ticketForm.totalQuantity,
+                maxPerCustomer: ticketForm.maxPerCustomer,
+                salesStartDate: ticketForm.salesStartDate ? `${ticketForm.salesStartDate}:00Z` : undefined,
+                salesEndDate: ticketForm.salesEndDate ? `${ticketForm.salesEndDate}:00Z` : undefined
             })
             toast({ title: 'Ticket type created successfully' })
             setIsTicketDialogOpen(false)
-            setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0, maxPerCustomer: 10 })
+            setTicketForm({ eventId, name: '', description: '', price: 0, totalQuantity: 0, maxPerCustomer: 10, salesStartDate: undefined, salesEndDate: undefined })
             fetchTicketTypes()
         } catch (error) {
             toast({ title: 'Failed to create ticket type', variant: 'destructive' })
@@ -166,12 +168,14 @@ export default function EventDetailPage() {
                 name: ticketForm.name,
                 description: ticketForm.description,
                 price: ticketForm.price.toString(),
-                totalQuantity: ticketForm.quantity,
+                totalQuantity: ticketForm.totalQuantity,
+                salesStartDate: ticketForm.salesStartDate ? `${ticketForm.salesStartDate}:00Z` : undefined,
+                salesEndDate: ticketForm.salesEndDate ? `${ticketForm.salesEndDate}:00Z` : undefined
             })
             toast({ title: 'Ticket type updated successfully' })
             setIsTicketDialogOpen(false)
             setEditingTicket(null)
-            setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0 })
+            setTicketForm({ eventId, name: '', description: '', price: 0, totalQuantity: 0, salesStartDate: undefined, salesEndDate: undefined })
             fetchTicketTypes()
         } catch (error) {
             toast({ title: 'Failed to update ticket type', variant: 'destructive' })
@@ -205,14 +209,16 @@ export default function EventDetailPage() {
             name: ticket.name,
             description: ticket.description,
             price: ticket.price,
-            quantity: ticket.totalQuantity,
+            totalQuantity: ticket.totalQuantity,
+            salesStartDate: ticket.salesStartDate?.slice(0, -1), // Remove Z for datetime-local input
+            salesEndDate: ticket.salesEndDate?.slice(0, -1) // Remove Z for datetime-local input
         })
         setIsTicketDialogOpen(true)
     }
 
     const openCreateTicket = () => {
         setEditingTicket(null)
-        setTicketForm({ eventId, name: '', description: '', price: 0, quantity: 0, maxPerCustomer: 10 })
+        setTicketForm({ eventId, name: '', description: '', price: 0, totalQuantity: 0, maxPerCustomer: 10, salesStartDate: undefined, salesEndDate: undefined })
         setIsTicketDialogOpen(true)
     }
 
@@ -535,9 +541,33 @@ export default function EventDetailPage() {
                                     id="ticket-quantity"
                                     type="number"
                                     min="1"
-                                    value={ticketForm.quantity}
+                                    value={ticketForm.totalQuantity}
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                        setTicketForm({ ...ticketForm, quantity: parseInt(e.target.value) || 0 })
+                                        setTicketForm({ ...ticketForm, totalQuantity: parseInt(e.target.value) || 0 })
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="ticket-sales-start">Sales Start Date</Label>
+                                <Input
+                                    id="ticket-sales-start"
+                                    type="datetime-local"
+                                    value={ticketForm.salesStartDate || ''}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        setTicketForm({ ...ticketForm, salesStartDate: e.target.value || undefined })
+                                    }
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="ticket-sales-end">Sales End Date</Label>
+                                <Input
+                                    id="ticket-sales-end"
+                                    type="datetime-local"
+                                    value={ticketForm.salesEndDate || ''}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        setTicketForm({ ...ticketForm, salesEndDate: e.target.value || undefined })
                                     }
                                 />
                             </div>

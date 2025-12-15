@@ -330,9 +330,10 @@ class ApiClient {
         return this.request<TicketType>(`/api/ticket-types/${id}`)
     }
 
-    async createTicketType(data: Partial<TicketType>): Promise<TicketType> {
+    async createTicketType(partnerId: string, data: CreateTicketTypeRequest): Promise<TicketType> {
         return this.request<TicketType>('/api/ticket-types', {
             method: 'POST',
+            headers: { 'X-Partner-Id': partnerId },
             body: JSON.stringify(data),
         })
     }
